@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>المدير الذكي 2026 (Fixed Reports)</title>
+    <title>نظام الحضور الذكي 2026</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
 
     <style>
@@ -19,7 +19,7 @@
         * { box-sizing: border-box; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
         body { font-family: 'Cairo', sans-serif; background-color: var(--bg); margin: 0; padding-bottom: 80px; color: var(--text); }
 
-        /* --- UI Styles (Non-Print) --- */
+        /* --- Auth Screen --- */
         #auth-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, var(--primary), #4cc9f0); z-index: 9999; display: flex; justify-content: center; align-items: center; flex-direction: column; }
         .auth-card { background: rgba(255,255,255,0.98); padding: 30px; border-radius: 24px; width: 90%; max-width: 380px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
         .auth-header h2 { color: var(--primary-dark); margin: 0 0 10px 0; }
@@ -34,15 +34,19 @@
         .input-group { position: relative; margin-bottom: 15px; }
         .toggle-password { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #888; font-size: 1.2rem; }
 
+        /* --- App Layout --- */
         #app-container { display: none; padding: 15px; max-width: 600px; margin: 0 auto; }
+        
         .header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; background: var(--surface); padding: 15px; border-radius: var(--radius); box-shadow: 0 4px 20px rgba(0,0,0,0.05); margin-bottom: 20px; gap: 10px; }
         .header-info { display: flex; flex-direction: column; min-width: 120px; }
         .app-main-title { margin: 0; font-size: 1.2rem; color: var(--primary-dark); font-weight: bold; }
         .user-sub-title { font-size: 0.9rem; color: #7f8c8d; }
+        .user-sub-title span { color: var(--primary); font-weight: 600; }
         .header-actions { display: flex; gap: 8px; }
         .action-btn { background: #f1f5f9; border: 1px solid #e2e8f0; width: 36px; height: 36px; border-radius: 10px; cursor: pointer; font-size: 1.1rem; display: flex; justify-content: center; align-items: center; color: #64748b; position: relative; }
         .badge-count { position: absolute; top: -5px; left: -5px; background: #f44336; color: white; font-size: 0.7rem; width: 18px; height: 18px; border-radius: 50%; display: none; justify-content: center; align-items: center; border: 2px solid white; }
 
+        /* Stats */
         .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px; }
         .stat-card { background: var(--surface); padding: 15px; border-radius: var(--radius); text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.05); cursor: pointer; }
         .stat-card h4 { margin: 0; font-size: 0.75rem; color: var(--text-light); }
@@ -51,6 +55,7 @@
         .full-width { grid-column: span 2; }
         .txt-red { color: #f44336 !important; } .txt-green { color: #4caf50 !important; }
 
+        /* Calendar */
         .calendar-box { background: var(--surface); border-radius: var(--radius); padding: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
         .cal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
         .days-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
@@ -58,11 +63,17 @@
         .day-cell { aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding-top: 5px; border-radius: 10px; background: #f8f9fa; cursor: pointer; position: relative; border: 1px solid transparent; }
         .day-cell span { font-weight: bold; font-size: 0.9rem; color: #444; z-index: 2; position: absolute; top: 4px; right: 6px; line-height: 1; }
         .day-cell.today { border-color: var(--primary); background: #e3f2fd !important; }
+        
+        /* Weekend Style (Lavender) */
         .day-cell.weekend { background-color: #E6E6FA; color: #4a4a4a; border: 1px dashed #d1c4e9; }
-        .day-cell.nat-holiday { background-color: #fce4ec; border: 1px solid #f8bbd0; }
-        .day-cell.future { opacity: 0.5; cursor: default; }
+        
+        /* National Holiday (Pink Frame) */
+        .day-cell.nat-holiday { background-color: transparent; border: 2px solid #ec407a !important; }
+        
+        .day-cell.future { opacity: 0.5; cursor: default; background: #f0f0f0 !important; }
         .day-cell.nat-holiday.future { cursor: pointer; opacity: 1; }
 
+        /* Colors */
         .day-cell.st-work { background-color: var(--work) !important; color: white !important; } .day-cell.st-work span { color: white !important; }
         .day-cell.st-holiday { background-color: var(--holiday) !important; color: #333 !important; } .day-cell.st-holiday span { color: #333 !important; }
         .day-cell.st-sick { background-color: var(--sick) !important; color: white !important; } .day-cell.st-sick span { color: white !important; }
@@ -70,13 +81,15 @@
         .day-cell.st-eid { background-color: var(--eid) !important; color: white !important; } .day-cell.st-eid span { color: white !important; }
         .day-cell.st-recup { background-color: var(--recup) !important; color: white !important; } .day-cell.st-recup span { color: white !important; }
 
+        /* Legend */
         .legend-container { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; margin-top: 20px; padding: 10px; background: var(--surface); border-radius: var(--radius); }
         .legend-dot { width: 20px; height: 20px; border-radius: 50%; cursor: pointer; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         .lg-work { background: var(--work); } .lg-holiday { background: var(--holiday); } .lg-sick { background: var(--sick); }
-        .lg-absent { background: var(--absent); } .lg-recup { background: var(--recup); } .lg-eid { background: var(--eid); } .lg-nat { background: #f8bbd0; border: 2px solid #ec407a; }
+        .lg-absent { background: var(--absent); } .lg-recup { background: var(--recup); } .lg-eid { background: var(--eid); } .lg-nat { background: transparent; border: 2px solid #ec407a; }
         #legend-toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: #333; color: white; padding: 8px 16px; border-radius: 20px; font-size: 0.85rem; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 3000; }
         .show-toast { opacity: 1 !important; }
 
+        /* Modals */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; display: none; justify-content: center; align-items: flex-end; }
         #confirmModal, #msgPopup { z-index: 99999 !important; align-items: center; } 
         .modal-content { background: var(--surface); width: 100%; max-width: 500px; border-radius: 24px 24px 0 0; padding: 25px; animation: slideUp 0.3s; max-height: 85vh; overflow-y: auto; }
@@ -88,60 +101,37 @@
         .btn-close-modal { width: 100%; padding: 12px; margin-top: 15px; background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; border-radius: 12px; font-weight: bold; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px; }
         .hidden { display: none; }
         
+        /* Lists */
         .preset-item, .search-item, .detail-item, .msg-item { display: flex; justify-content: space-between; align-items: center; background: #f1f5f9; padding: 12px; border-radius: 10px; margin-bottom: 6px; font-size: 0.9rem; border-left: 4px solid transparent; }
         .detail-item.pos { border-left-color: var(--work); } .detail-item.neg { border-left-color: var(--absent); } .detail-item.neutral { border-left-color: var(--primary); }
         .msg-item { border-left-color: #ff9800; background: #fff8e1; flex-direction: column; align-items: flex-start; gap: 8px; }
         .msg-item .msg-body { font-size: 0.9rem; color: #333; }
         .msg-item .msg-footer { width: 100%; display: flex; justify-content: space-between; font-size: 0.7rem; color: #888; border-top: 1px solid rgba(0,0,0,0.05); padding-top: 5px; }
-
         .del-icon { color: red; font-weight: bold; padding: 5px 10px; cursor: pointer; background: #fff; border-radius: 5px; }
         .d-val { font-weight: bold; direction: ltr; font-family: monospace; font-size: 1rem; }
         .d-val.pos { color: var(--work); } .d-val.neg { color: var(--absent); } .d-val.neutral { color: #666; }
         .details-header { font-weight: bold; margin: 15px 0 10px; color: var(--primary-dark); font-size: 0.95rem; border-bottom: 2px solid #eee; padding-bottom: 5px; }
         .msg-popup-text { font-size: 1rem; color: #333; margin: 15px 0; background: #f9f9f9; padding: 15px; border-radius: 10px; border-right: 4px solid var(--primary); text-align: right; }
 
-        /* --- PRINTABLE REPORT STYLES (CORRECTED) --- */
+        /* --- PRINTABLE REPORT STYLES --- */
         #printable-area { display: none; }
-        
         @media print {
-            /* Hide Everything else */
             body > * { display: none !important; }
             #printable-area { display: block !important; position: absolute; top: 0; left: 0; width: 100%; background: white; z-index: 99999; }
-            
-            @page {
-                size: A4 portrait;
-                margin: 0.5cm;
-            }
-
+            @page { size: A4 portrait; margin: 0.5cm; }
             .report-container { font-family: 'Cairo', sans-serif; color: #000; width: 100%; }
             .report-header-print { text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 10px; }
             .report-header-print h2 { font-size: 18px; margin: 0; }
             .report-header-print p { font-size: 12px; margin: 5px 0; }
-
-            /* Yearly Grid (3 cols x 4 rows) */
-            .year-grid { 
-                display: grid; 
-                grid-template-columns: repeat(3, 1fr); 
-                gap: 8px; 
-                page-break-inside: avoid;
-            }
-            .month-block { 
-                border: 1px solid #333; 
-                padding: 2px;
-                break-inside: avoid;
-            }
+            .year-report-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; page-break-inside: avoid; }
+            .month-block { border: 1px solid #333; padding: 2px; break-inside: avoid; }
             .month-title-print { font-size: 10px; font-weight: bold; text-align: center; background: #eee; border-bottom: 1px solid #333; }
-            
-            /* Compact Table for Year */
             .mini-table { width: 100%; font-size: 8px; border-collapse: collapse; }
             .mini-table td { border-bottom: 1px solid #ddd; padding: 2px; }
             .mini-table tr:last-child td { border-bottom: none; }
-
-            /* Monthly Report Table (Standard) */
             .standard-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 10px; }
             .standard-table th, .standard-table td { border: 1px solid #000; padding: 6px; text-align: center; }
             .standard-table th { background-color: #f0f0f0; }
-
             .report-summary-print { border-top: 2px solid #000; margin-top: 15px; padding-top: 5px; font-size: 12px; font-weight: bold; display: flex; justify-content: space-between; }
         }
     </style>
@@ -151,7 +141,7 @@
     <div id="loader" class="loading"><div style="width:40px;height:40px;border:4px solid #ddd;border-top-color:var(--primary);border-radius:50%;animation:spin 1s infinite"></div></div>
     <div id="legend-toast"></div>
 
-    <!-- Auth -->
+    <!-- Auth System -->
     <div id="auth-overlay">
         <div class="auth-card">
             <div id="view-login" class="view-section active">
@@ -174,7 +164,7 @@
                 <div id="reg-error" class="error-msg"></div><div id="reg-success" class="success-msg"></div>
             </div>
             <div id="view-reset" class="view-section">
-                <div class="auth-header"><h2>استعادة كلمة المرور</h2><p>أدخل بريدك لاستلام الرابط</p></div>
+                <div class="auth-header"><h2>استعادة كلمة المرور</h2><p>أدخل بريدك لاستلام رابط التعيين</p></div>
                 <div class="input-group"><input type="email" id="reset-email" class="app-input" placeholder="البريد الإلكتروني"></div>
                 <button class="btn-main" onclick="handleReset()">إرسال الرابط</button>
                 <button class="btn-main btn-secondary" onclick="switchView('view-login')">عودة</button>
@@ -231,16 +221,17 @@
 
     <!-- Modals -->
 
-    <!-- Report Modal -->
+    <!-- Report -->
     <div class="modal-overlay" id="reportModal">
         <div class="modal-content" style="max-width:320px; text-align:center;">
             <h3 style="color:var(--primary); margin-bottom:20px;">🖨️ استخراج التقرير</h3>
             <button class="btn-main" onclick="window.app.confirmGenerateReport('month')">📄 تقرير هذا الشهر</button>
-            <button class="btn-main" style="background:var(--primary-dark)" onclick="window.app.confirmGenerateReport('year')">📚 تقرير السنة كاملة (صفحة واحدة)</button>
+            <button class="btn-main" style="background:var(--primary-dark)" onclick="window.app.confirmGenerateReport('year')">📚 تقرير السنة كاملة</button>
             <button class="btn-close-modal" onclick="document.getElementById('reportModal').style.display='none'">إلغاء</button>
         </div>
     </div>
-
+    
+    <!-- Confirm -->
     <div class="modal-overlay" id="confirmModal">
         <div class="modal-content">
             <h3 style="color:#f44336; margin-bottom:10px;">⚠️ تأكيد الحذف</h3>
@@ -302,13 +293,16 @@
                 <label class="form-label">فلترة البحث:</label>
                 <div style="display:flex; gap:5px; margin-bottom:10px; flex-wrap: wrap;">
                     <select id="search-month" class="app-input" style="flex:1;" onchange="window.app.performSearch()">
-                        <option value="">الأشهر</option><option value="1">يناير</option><option value="2">فبراير</option><option value="3">مارس</option><option value="4">أبريل</option><option value="5">مايو</option><option value="6">يونيو</option><option value="7">يوليو</option><option value="8">أغسطس</option><option value="9">سبتمبر</option><option value="10">أكتوبر</option><option value="11">نوفمبر</option><option value="12">ديسمبر</option>
+                        <option value="">الأشهر</option><option value="1">يناير</option><option value="2">فبراير</option><option value="3">مارس</option>
+                        <option value="4">أبريل</option><option value="5">مايو</option><option value="6">يونيو</option><option value="7">يوليو</option><option value="8">أغسطس</option><option value="9">سبتمبر</option>
+                        <option value="10">أكتوبر</option><option value="11">نوفمبر</option><option value="12">ديسمبر</option>
                     </select>
                     <select id="search-day-name" class="app-input" style="flex:1;" onchange="window.app.performSearch()">
                         <option value="">الأيام</option><option value="1">الإثنين</option><option value="2">الثلاثاء</option><option value="3">الأربعاء</option><option value="4">الخميس</option><option value="5">الجمعة</option><option value="6">السبت</option><option value="0">الأحد</option>
                     </select>
                     <select id="search-type" class="app-input" style="flex:1; width:100%;" onchange="window.app.performSearch()">
-                        <option value="">الحالات</option><option value="work">✅ عمل</option><option value="holiday">🏖️ عطلة</option><option value="sick">💊 مرض</option><option value="eid">🎉 أعياد</option><option value="recup">🔄 تعويض</option><option value="absent">❌ غياب</option>
+                        <option value="">الحالات</option><option value="work">✅ عمل</option><option value="holiday">🏖️ عطلة</option><option value="sick">💊 مرض</option>
+                        <option value="eid">🎉 أعياد</option><option value="recup">🔄 تعويض</option><option value="absent">❌ غياب</option>
                     </select>
                 </div>
             </div>
@@ -321,6 +315,7 @@
     <div class="modal-overlay" id="settingsModal">
         <div class="modal-content">
             <h3 style="text-align:center;">الإعدادات</h3>
+            
             <div id="admin-section" style="display:none; margin-bottom:15px;">
                 <div style="background:#e3f2fd; padding:10px; border-radius:10px; margin-bottom:10px;">
                      <label class="form-label" style="color:#1565c0; font-weight:bold;">اسم البرنامج (للكل):</label>
@@ -338,6 +333,7 @@
                     <div id="presets-list" class="preset-list" style="margin-top:10px; max-height:100px; overflow-y:auto;"></div>
                 </div>
             </div>
+
             <div style="background:#e8f5e9; padding:10px; border-radius:10px; margin-bottom:15px;">
                 <label class="form-label">الاسم الكامل:</label><input type="text" id="s-name" class="app-input" placeholder="اسم الموظف">
                 <label class="form-label">تاريخ التحاقي:</label><input type="date" id="s-join" class="app-input">
@@ -353,6 +349,7 @@
         </div>
     </div>
 
+    <!-- Printable Area -->
     <div id="printable-area"></div>
 
     <!-- Firebase SDK -->
@@ -375,6 +372,7 @@
         const db = getFirestore(app);
         const auth = getAuth(app);
 
+        // --- EXPORTS ---
         window.showLoader = (s) => document.getElementById('loader').style.display = s?'flex':'none';
         window.showError = (id, msg) => { const el=document.getElementById(id); el.textContent=msg; el.style.display='block'; };
         window.switchView = (id) => {
@@ -483,6 +481,7 @@
                     if(window.appData.role === 'admin') document.getElementById('admin-section').style.display = 'block';
                 }
 
+                // Listeners
                 onSnapshot(doc(db, "attendance", user.uid), (doc) => {
                     if(doc.exists()) window.appData.events = doc.data().events || {};
                     window.app.renderCalendar();
@@ -583,7 +582,9 @@
                          let monthEvents = [];
                          for(let k in window.appData.events) {
                              let d = new Date(k);
-                             if(d.getFullYear() === yr && d.getMonth() === m) monthEvents.push({ date: k, ...window.appData.events[k] });
+                             if(d.getFullYear() === yr && d.getMonth() === m) {
+                                 monthEvents.push({ date: k, ...window.appData.events[k] });
+                             }
                          }
                          monthEvents.sort((a,b) => new Date(a.date) - new Date(b.date));
                          
@@ -679,13 +680,22 @@
                         if(!activePopupMsg) activePopupMsg = msg;
                     }
                 });
+
                 const badge = document.getElementById('msg-badge');
-                if(unreadCount > 0) { badge.textContent = unreadCount; badge.style.display = 'flex'; } else { badge.style.display = 'none'; }
+                if(unreadCount > 0) {
+                    badge.textContent = unreadCount;
+                    badge.style.display = 'flex';
+                } else {
+                    badge.style.display = 'none';
+                }
+
                 if(activePopupMsg) {
                     activeMsgId = activePopupMsg.id;
                     document.getElementById('live-msg-content').textContent = activePopupMsg.content;
                     document.getElementById('msgPopup').style.display = 'flex';
-                } else { document.getElementById('msgPopup').style.display = 'none'; }
+                } else {
+                    document.getElementById('msgPopup').style.display = 'none';
+                }
             },
 
             dismissMessage: () => {
@@ -700,10 +710,12 @@
                 const list = document.getElementById('inbox-list');
                 list.innerHTML = '';
                 const visibleMsgs = window.appData.messages.filter(m => !window.appData.personal.deletedMsgs.includes(m.id));
+
                 if(visibleMsgs.length === 0) list.innerHTML = '<div style="text-align:center; padding:20px; color:#999">لا رسائل</div>';
                 else {
                     visibleMsgs.forEach(msg => {
-                        let dateStr = msg.createdAt ? new Date(msg.createdAt.seconds * 1000).toLocaleDateString('ar-EG') : "الآن";
+                        let dateStr = "الآن";
+                        if(msg.createdAt) dateStr = new Date(msg.createdAt.seconds * 1000).toLocaleDateString('ar-EG');
                         list.innerHTML += `<div class="msg-item"><div class="msg-body">${msg.content}</div><div class="msg-footer"><span>${dateStr}</span><span class="del-icon" onclick="window.app.askDelete('msg', '${msg.id}')">حذف</span></div></div>`;
                     });
                 }
@@ -733,6 +745,7 @@
                 document.getElementById('confirmModal').style.display = 'none';
             },
 
+            // --- Legend Toast ---
             showLegendToast: (msg) => {
                 const toast = document.getElementById('legend-toast');
                 toast.textContent = msg;
@@ -740,23 +753,40 @@
                 setTimeout(() => toast.classList.remove('show-toast'), 3000);
             },
 
+            // Calendar
             checkAutoFill: () => {
                 const today = new Date(); today.setHours(0,0,0,0);
                 let startCheck = new Date(2026, 0, 1);
                 if (today < startCheck) return;
-                let defStart='08:00', defEnd='16:00';
+                
+                let lastStart = '08:00', lastEnd = '16:00';
                 if(window.appData.global.presets && window.appData.global.presets.length > 0) {
-                    defStart = window.appData.global.presets[0].start;
-                    defEnd = window.appData.global.presets[0].end;
+                    lastStart = window.appData.global.presets[0].start;
+                    lastEnd = window.appData.global.presets[0].end;
                 }
+
                 let changes = false;
                 let loopDate = new Date(startCheck);
+
                 while (loopDate < today) {
-                    const dNum = loopDate.getDay();
-                    if (dNum !== 0 && dNum !== 6) {
-                        const k = `${loopDate.getFullYear()}-${String(loopDate.getMonth()+1).padStart(2,'0')}-${String(loopDate.getDate()).padStart(2,'0')}`;
-                        if (!window.appData.events[k]) {
-                            window.appData.events[k] = { type:'work', start:defStart, end:defEnd, hours:8, autoFilled:true };
+                    const k = `${loopDate.getFullYear()}-${String(loopDate.getMonth()+1).padStart(2,'0')}-${String(loopDate.getDate()).padStart(2,'0')}`;
+                    const evt = window.appData.events[k];
+                    
+                    if (evt && evt.type === 'work' && evt.start && evt.end) {
+                        lastStart = evt.start; lastEnd = evt.end;
+                    }
+                    else if (!evt) {
+                        const dNum = loopDate.getDay();
+                        if (dNum !== 0 && dNum !== 6) {
+                            const [h1, m1] = lastStart.split(':').map(Number);
+                            const [h2, m2] = lastEnd.split(':').map(Number);
+                            let diff = (h2*60+m2) - (h1*60+m1);
+                            if(diff < 0) diff += 24*60;
+                            const hrs = parseFloat((diff/60).toFixed(2));
+
+                            window.appData.events[k] = { 
+                                type: 'work', start: lastStart, end: lastEnd, hours: hrs, autoFilled: true 
+                            };
                             changes = true;
                         }
                     }
@@ -776,10 +806,12 @@
                 firstDayIndex = (firstDayIndex === 0) ? 6 : firstDayIndex - 1;
                 const daysInMonth = new Date(y, m + 1, 0).getDate();
                 for(let i=0; i<firstDayIndex; i++) grid.innerHTML += `<div></div>`;
+                
                 for(let i=1; i<=daysInMonth; i++) {
                     const key = `${y}-${String(m+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
                     const evt = window.appData.events[key];
                     let cls = '', txt = '';
+                    
                     const natKey = `${m+1}-${i}`;
                     const isNat = nationalHolidays[natKey];
                     let natClass = '';
@@ -791,19 +823,31 @@
                         else if(evt.type === 'absent') { cls = 'st-absent'; }
                         else if(evt.type === 'recup') { cls = 'st-recup'; }
                         else if(evt.type === 'eid') { cls = 'st-eid'; }
-                    } else if (isNat) { natClass = 'nat-holiday'; }
+                    } else if (isNat) {
+                        natClass = 'nat-holiday';
+                    }
 
                     const currentLoopDate = new Date(y, m, i);
-                    const now = new Date(); now.setHours(0,0,0,0);
+                    const now = new Date();
+                    now.setHours(0,0,0,0);
                     const isFuture = currentLoopDate.setHours(0,0,0,0) > now.getTime();
+                    
                     const isWeekend = (currentLoopDate.getDay() === 0 || currentLoopDate.getDay() === 6);
                     const weekendClass = isWeekend ? 'weekend' : '';
+                    
                     const todayClass = (new Date().toDateString() === new Date(y,m,i).toDateString()) ? 'today' : '';
+                    
                     const futureClass = isFuture ? 'future' : '';
+                    
+                    // Allow clicking future IF it is national holiday
                     const isClickable = !isFuture || isNat;
                     const clickAction = isClickable ? `onclick="window.app.openDay('${key}')"` : '';
 
-                    grid.innerHTML += `<div class="day-cell ${todayClass} ${weekendClass} ${natClass} ${cls} ${futureClass}" ${clickAction}><span>${i}</span></div>`;
+                    grid.innerHTML += `
+                        <div class="day-cell ${todayClass} ${weekendClass} ${natClass} ${cls} ${futureClass}" ${clickAction}>
+                            <span>${i}</span>
+                        </div>
+                    `;
                 }
                 window.app.calcStats();
             },
@@ -814,15 +858,22 @@
                 const dateObj = new Date(key);
                 const hKey = `${dateObj.getMonth()+1}-${dateObj.getDate()}`;
                 const natName = nationalHolidays[hKey];
-                const today = new Date(); today.setHours(0,0,0,0);
+                
+                const today = new Date();
+                today.setHours(0,0,0,0);
                 if(new Date(key).setHours(0,0,0,0) > today.getTime() && !natName) return;
 
                 selectedKey = key;
                 document.getElementById('modal-title').textContent = key;
                 document.getElementById('dayModal').style.display = 'flex';
+                
                 let evt = window.appData.events[key];
-                if (!evt && natName) evt = { type: 'eid', eidStatus: 'rest', eidName: natName };
-                else if (!evt) evt = { type: 'work', start: '', end: '', eidStatus: 'work' };
+                
+                if (!evt && natName) {
+                    evt = { type: 'eid', eidStatus: 'rest', eidName: natName };
+                } else if (!evt) {
+                    evt = { type: 'work', start: '', end: '', eidStatus: 'work' };
+                }
 
                 document.getElementById('d-type').value = evt.type;
                 document.getElementById('d-start').value = evt.start || '';
@@ -878,6 +929,7 @@
             saveDay: () => {
                 const type = document.getElementById('d-type').value;
                 let targetKey = selectedKey;
+
                 if(type === 'holiday') {
                     let count = parseInt(document.getElementById('d-count').value);
                     let loopD = new Date(selectedKey);
@@ -900,12 +952,24 @@
                             const [h1, m1] = s.split(':').map(Number);
                             const [h2, m2] = e.split(':').map(Number);
                             let diff = (h2*60+m2) - (h1*60+m1);
-                            if(s > e) { diff += 24*60; const currentD = new Date(selectedKey); currentD.setDate(currentD.getDate() + 1); targetKey = `${currentD.getFullYear()}-${String(currentD.getMonth()+1).padStart(2,'0')}-${String(currentD.getDate()).padStart(2,'0')}`; }
+                            if(s > e) { 
+                                diff += 24*60;
+                                const currentD = new Date(selectedKey);
+                                currentD.setDate(currentD.getDate() + 1);
+                                targetKey = `${currentD.getFullYear()}-${String(currentD.getMonth()+1).padStart(2,'0')}-${String(currentD.getDate()).padStart(2,'0')}`;
+                            }
                             data.hours = parseFloat((diff/60).toFixed(2));
                         }
-                        if(type === 'eid') { data.eidStatus = 'work'; data.eidName = document.getElementById('d-eid-name').value; }
-                    } else if (type === 'eid') { data.eidStatus = 'rest'; data.eidName = document.getElementById('d-eid-name').value; }
-                    else if (type === 'recup') { data.recupTarget = document.getElementById('d-recup-target').value; }
+                        if(type === 'eid') {
+                            data.eidStatus = 'work';
+                            data.eidName = document.getElementById('d-eid-name').value;
+                        }
+                    } else if (type === 'eid') {
+                        data.eidStatus = 'rest';
+                        data.eidName = document.getElementById('d-eid-name').value;
+                    } else if (type === 'recup') {
+                        data.recupTarget = document.getElementById('d-recup-target').value;
+                    }
                     window.appData.events[targetKey] = data;
                 }
                 window.saveData('events', window.appData.events);
@@ -935,13 +999,18 @@
                 document.getElementById('confirmModal').style.display = 'none';
             },
 
+            // --- Logic Hub ---
             getLeaveBreakdown: () => {
                 const currentY = new Date(2026, 0, 1).getFullYear();
                 const joinDateStr = window.appData.personal.joinDate;
                 let pools = [];
+
                 if(window.appData.personal.adjustments) {
-                    window.appData.personal.adjustments.forEach((adj, i) => { pools.push({ id: `adj_${i}`, label: `رصيد سابق/إضافي (${adj.reason})`, total: parseFloat(adj.amount), remaining: parseFloat(adj.amount), type: 'bonus' }); });
+                    window.appData.personal.adjustments.forEach((adj, i) => {
+                        pools.push({ id: `adj_${i}`, label: `رصيد سابق/إضافي (${adj.reason})`, total: parseFloat(adj.amount), remaining: parseFloat(adj.amount), type: 'bonus' });
+                    });
                 }
+
                 if(joinDateStr) {
                     const joinD = new Date(joinDateStr);
                     const joinY = joinD.getFullYear();
@@ -954,15 +1023,25 @@
                         if(amount > 0) pools.push({ id: y, label: `رصيد سنة ${y}`, total: amount, remaining: amount, type: 'year' });
                     }
                 }
-                const holidays = Object.entries(window.appData.events).filter(([k, v]) => v.type === 'holiday').sort((a, b) => new Date(a[0]) - new Date(b[0]));
+
+                const holidays = Object.entries(window.appData.events)
+                    .filter(([k, v]) => v.type === 'holiday')
+                    .sort((a, b) => new Date(a[0]) - new Date(b[0]));
+
                 let deductions = [];
                 holidays.forEach(h => {
                     let consumed = false;
                     for(let pool of pools) {
-                        if(pool.remaining > 0) { pool.remaining--; deductions.push({ date: h[0], note: `تم خصمه من ${pool.label}`, val: '-1', type: 'neg' }); consumed = true; break; }
+                        if(pool.remaining > 0) {
+                            pool.remaining--;
+                            deductions.push({ date: h[0], note: `تم خصمه من ${pool.label}`, val: '-1', type: 'neg' });
+                            consumed = true;
+                            break;
+                        }
                     }
                     if(!consumed) deductions.push({ date: h[0], note: 'رصيد غير كافٍ', val: '-1', type: 'neg' });
                 });
+
                 return { pools, deductions };
             },
 
@@ -984,7 +1063,10 @@
                     const k = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
                     const evt = window.appData.events[k];
                     const dayNum = d.getDay();
-                    if(dayNum === 6) { if(evt && (evt.type === 'work' || (evt.type === 'eid' && evt.eidStatus === 'work'))) sat += 4; else sat -= 4; }
+                    if(dayNum === 6) {
+                        if(evt && (evt.type === 'work' || (evt.type === 'eid' && evt.eidStatus === 'work'))) sat += 4;
+                        else sat -= 4;
+                    }
                 }
 
                 for (const [k, evt] of Object.entries(window.appData.events)) {
@@ -1004,7 +1086,9 @@
                 for(let k in window.appData.events) {
                     const e = window.appData.events[k];
                     const d = new Date(k);
-                    if((d.getDay()===0 && e.type==='work') || (e.type==='eid' && e.eidStatus==='work')) { if(!used.includes(k)) pending++; }
+                    if((d.getDay()===0 && e.type==='work') || (e.type==='eid' && e.eidStatus==='work')) {
+                        if(!used.includes(k)) pending++;
+                    }
                 }
                 document.getElementById('st-net').innerHTML = `<span class="${net>=0?'txt-green':'txt-red'}">${net.toFixed(1)}</span>`;
                 document.getElementById('st-sat').innerHTML = `<span class="${sat>=0?'txt-green':'txt-red'}">${sat}</span>`;
@@ -1026,12 +1110,20 @@
 
                 if (cat === 'leave') {
                     const bd = window.app.getLeaveBreakdown();
+                    
                     list.innerHTML += `<div class="details-header">الأرصدة المتاحة (FIFO):</div>`;
-                    bd.pools.forEach(p => { if(p.remaining > 0) list.innerHTML += `<div class="detail-item pos"><span>${p.label}</span><span class="d-val">${p.remaining} يوم</span></div>`; });
+                    bd.pools.forEach(p => {
+                        if(p.remaining > 0) list.innerHTML += `<div class="detail-item pos"><span>${p.label}</span><span class="d-val">${p.remaining} يوم</span></div>`;
+                    });
+
                     if(bd.deductions.length > 0) {
                         list.innerHTML += `<div class="details-header">سجل الاستهلاك:</div>`;
-                        bd.deductions.reverse().forEach(d => { list.innerHTML += `<div class="detail-item neg" onclick="window.app.openDay('${d.date}')"><span>${d.date} <small>(${d.note})</small></span><span class="d-val">-1</span></div>`; });
-                    } else { list.innerHTML += `<div style="text-align:center; padding:10px;">لم يتم استهلاك أي عطلة</div>`; }
+                        bd.deductions.reverse().forEach(d => {
+                            list.innerHTML += `<div class="detail-item neg" onclick="window.app.openDay('${d.date}')"><span>${d.date} <small>(${d.note})</small></span><span class="d-val">-1</span></div>`;
+                        });
+                    } else {
+                        list.innerHTML += `<div style="text-align:center; padding:10px;">لم يتم استهلاك أي عطلة</div>`;
+                    }
                     document.getElementById('searchModal').style.display = 'flex';
                     return;
                 }
@@ -1093,18 +1185,16 @@
             performSearch: () => {
                 const dayVal = document.getElementById('search-day-name').value;
                 const typeVal = document.getElementById('search-type').value;
-                const monthVal = document.getElementById('search-month').value;
                 const list = document.getElementById('search-results');
                 list.innerHTML = '';
-                if(dayVal === "" && typeVal === "" && monthVal === "") return;
+                if(dayVal === "" && typeVal === "") return;
                 const results = [];
                 for(let k in window.appData.events) {
                     const evt = window.appData.events[k];
                     const d = new Date(k);
                     let matchDay = (dayVal === "") || (d.getDay() == parseInt(dayVal));
                     let matchType = (typeVal === "") || (evt.type === typeVal);
-                    let matchMonth = (monthVal === "") || (d.getMonth() + 1 == parseInt(monthVal));
-                    if(matchDay && matchType && matchMonth) results.push({date:k, ...evt});
+                    if(matchDay && matchType) results.push({date:k, ...evt});
                 }
                 results.sort((a,b) => new Date(b.date) - new Date(a.date));
                 if(results.length === 0) list.innerHTML = '<div style="text-align:center; padding:10px;">لا توجد نتائج</div>';
@@ -1138,53 +1228,10 @@
                 }
             },
 
-            delPreset: (i) => { window.appData.global.presets.splice(i, 1); window.app.renderSettingsLists(); },
+            delPreset: (i) => {
+                window.appData.global.presets.splice(i, 1);
+                window.app.renderSettingsLists();
+            },
+
             addAdj: () => {
-                const d = document.getElementById('adj-days').value;
-                const r = document.getElementById('adj-note').value;
-                if(d) {
-                    if(!window.appData.personal.adjustments) window.appData.personal.adjustments = [];
-                    window.appData.personal.adjustments.push({amount:d, reason:r});
-                    document.getElementById('adj-days').value = '';
-                    document.getElementById('adj-note').value = '';
-                    window.app.renderSettingsLists();
-                }
-            },
-            delAdj: (i) => { window.appData.personal.adjustments.splice(i, 1); window.app.renderSettingsLists(); },
-
-            renderSettingsLists: () => {
-                const pl = document.getElementById('presets-list');
-                pl.innerHTML = '';
-                if(window.appData.global.presets) {
-                    window.appData.global.presets.forEach((p, i) => {
-                        pl.innerHTML += `<div class="preset-item"><span>${p.label} (${p.start}-${p.end})</span> <span class="del-icon" onclick="window.app.delPreset(${i})">X</span></div>`;
-                    });
-                }
-                const al = document.getElementById('adj-list');
-                al.innerHTML = '';
-                if(window.appData.personal.adjustments) {
-                    window.appData.personal.adjustments.forEach((a, i) => {
-                        al.innerHTML += `<div class="preset-item"><span>+${a.amount} (${a.reason})</span> <span class="del-icon" onclick="window.app.delAdj(${i})">X</span></div>`;
-                    });
-                }
-            },
-
-            saveSettings: () => {
-                window.appData.personal.joinDate = document.getElementById('s-join').value;
-                window.appData.personal.fullName = document.getElementById('s-name').value;
-                window.appData.global.appName = document.getElementById('p-app-name').value || window.appData.global.appName;
-                window.saveData('personal_settings', window.appData.personal);
-                if(window.appData.role === 'admin') window.saveData('global_config', window.appData.global);
-                document.getElementById('settingsModal').style.display = 'none';
-            },
-
-            showLegendToast: (msg) => {
-                const toast = document.getElementById('legend-toast');
-                toast.textContent = msg;
-                toast.classList.add('show-toast');
-                setTimeout(() => toast.classList.remove('show-toast'), 3000);
-            }
-        };
-    </script>
-</body>
-</html>
+                const d = document.getElementById('adj-days'
