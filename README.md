@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>نظام الحضور الذكي 2026</title>
+    <title>نظام الحضور الذكي 2026 (Stable)</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
 
     <style>
@@ -30,13 +30,19 @@
         .error-msg { color: #d32f2f; background: #ffebee; padding: 10px; border-radius: 8px; margin-top: 10px; display: none; font-size: 0.9rem; }
         .success-msg { color: #2e7d32; background: #e8f5e9; padding: 10px; border-radius: 8px; margin-top: 10px; display: none; font-size: 0.9rem; }
         .view-section { display: none; } .view-section.active { display: block; animation: fadeIn 0.4s; }
-        .loading { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.8); z-index:10000; display:none; justify-content:center; align-items:center; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Loader Fixed */
+        .loading { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.9); z-index:10000; display:none; justify-content:center; align-items:center; flex-direction: column; }
+        .spinner { width:40px; height:40px; border:4px solid #ddd; border-top-color:var(--primary); border-radius:50%; animation:spin 1s infinite; margin-bottom: 10px; }
+        @keyframes spin { to { transform:rotate(360deg); } }
+        .loading p { color: #666; font-size: 0.9rem; }
+
         .input-group { position: relative; margin-bottom: 15px; }
         .toggle-password { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #888; font-size: 1.2rem; }
 
         /* --- App Layout --- */
         #app-container { display: none; padding: 15px; max-width: 600px; margin: 0 auto; }
-        
         .header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; background: var(--surface); padding: 15px; border-radius: var(--radius); box-shadow: 0 4px 20px rgba(0,0,0,0.05); margin-bottom: 20px; gap: 10px; }
         .header-info { display: flex; flex-direction: column; min-width: 120px; }
         .app-main-title { margin: 0; font-size: 1.2rem; color: var(--primary-dark); font-weight: bold; }
@@ -63,14 +69,9 @@
         .day-cell { aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding-top: 5px; border-radius: 10px; background: #f8f9fa; cursor: pointer; position: relative; border: 1px solid transparent; }
         .day-cell span { font-weight: bold; font-size: 0.9rem; color: #444; z-index: 2; position: absolute; top: 4px; right: 6px; line-height: 1; }
         .day-cell.today { border-color: var(--primary); background: #e3f2fd !important; }
-        
-        /* Weekend Style (Lavender) */
         .day-cell.weekend { background-color: #E6E6FA; color: #4a4a4a; border: 1px dashed #d1c4e9; }
-        
-        /* National Holiday (Pink Frame) */
-        .day-cell.nat-holiday { background-color: transparent; border: 2px solid #ec407a !important; }
-        
-        .day-cell.future { opacity: 0.5; cursor: default; background: #f0f0f0 !important; }
+        .day-cell.nat-holiday { background-color: #fce4ec; border: 1px solid #f8bbd0; }
+        .day-cell.future { opacity: 0.5; cursor: default; }
         .day-cell.nat-holiday.future { cursor: pointer; opacity: 1; }
 
         /* Colors */
@@ -85,7 +86,7 @@
         .legend-container { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; margin-top: 20px; padding: 10px; background: var(--surface); border-radius: var(--radius); }
         .legend-dot { width: 20px; height: 20px; border-radius: 50%; cursor: pointer; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         .lg-work { background: var(--work); } .lg-holiday { background: var(--holiday); } .lg-sick { background: var(--sick); }
-        .lg-absent { background: var(--absent); } .lg-recup { background: var(--recup); } .lg-eid { background: var(--eid); } .lg-nat { background: transparent; border: 2px solid #ec407a; }
+        .lg-absent { background: var(--absent); } .lg-recup { background: var(--recup); } .lg-eid { background: var(--eid); } .lg-nat { background: #f8bbd0; border: 2px solid #ec407a; }
         #legend-toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: #333; color: white; padding: 8px 16px; border-radius: 20px; font-size: 0.85rem; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 3000; }
         .show-toast { opacity: 1 !important; }
 
@@ -113,7 +114,7 @@
         .details-header { font-weight: bold; margin: 15px 0 10px; color: var(--primary-dark); font-size: 0.95rem; border-bottom: 2px solid #eee; padding-bottom: 5px; }
         .msg-popup-text { font-size: 1rem; color: #333; margin: 15px 0; background: #f9f9f9; padding: 15px; border-radius: 10px; border-right: 4px solid var(--primary); text-align: right; }
 
-        /* --- PRINTABLE REPORT STYLES --- */
+        /* Report Styles */
         #printable-area { display: none; }
         @media print {
             body > * { display: none !important; }
@@ -138,10 +139,14 @@
 </head>
 <body>
 
-    <div id="loader" class="loading"><div style="width:40px;height:40px;border:4px solid #ddd;border-top-color:var(--primary);border-radius:50%;animation:spin 1s infinite"></div></div>
+    <div id="loader" class="loading">
+        <div class="spinner"></div>
+        <p>جاري التحميل...</p>
+    </div>
+    
     <div id="legend-toast"></div>
 
-    <!-- Auth System -->
+    <!-- Auth -->
     <div id="auth-overlay">
         <div class="auth-card">
             <div id="view-login" class="view-section active">
@@ -206,7 +211,6 @@
                 <button class="action-btn" onclick="window.app.navMonth(1)">&#10095;</button>
             </div>
             <div class="days-grid" id="cal-grid"></div>
-            
             <div class="legend-container">
                 <div class="legend-dot lg-work" onclick="window.app.showLegendToast('عمل عادي')"></div>
                 <div class="legend-dot lg-holiday" onclick="window.app.showLegendToast('عطلة سنوية')"></div>
@@ -230,7 +234,7 @@
             <button class="btn-close-modal" onclick="document.getElementById('reportModal').style.display='none'">إلغاء</button>
         </div>
     </div>
-    
+
     <!-- Confirm -->
     <div class="modal-overlay" id="confirmModal">
         <div class="modal-content">
@@ -293,16 +297,13 @@
                 <label class="form-label">فلترة البحث:</label>
                 <div style="display:flex; gap:5px; margin-bottom:10px; flex-wrap: wrap;">
                     <select id="search-month" class="app-input" style="flex:1;" onchange="window.app.performSearch()">
-                        <option value="">الأشهر</option><option value="1">يناير</option><option value="2">فبراير</option><option value="3">مارس</option>
-                        <option value="4">أبريل</option><option value="5">مايو</option><option value="6">يونيو</option><option value="7">يوليو</option><option value="8">أغسطس</option><option value="9">سبتمبر</option>
-                        <option value="10">أكتوبر</option><option value="11">نوفمبر</option><option value="12">ديسمبر</option>
+                        <option value="">الأشهر</option><option value="1">يناير</option><option value="2">فبراير</option><option value="3">مارس</option><option value="4">أبريل</option><option value="5">مايو</option><option value="6">يونيو</option><option value="7">يوليو</option><option value="8">أغسطس</option><option value="9">سبتمبر</option><option value="10">أكتوبر</option><option value="11">نوفمبر</option><option value="12">ديسمبر</option>
                     </select>
                     <select id="search-day-name" class="app-input" style="flex:1;" onchange="window.app.performSearch()">
                         <option value="">الأيام</option><option value="1">الإثنين</option><option value="2">الثلاثاء</option><option value="3">الأربعاء</option><option value="4">الخميس</option><option value="5">الجمعة</option><option value="6">السبت</option><option value="0">الأحد</option>
                     </select>
                     <select id="search-type" class="app-input" style="flex:1; width:100%;" onchange="window.app.performSearch()">
-                        <option value="">الحالات</option><option value="work">✅ عمل</option><option value="holiday">🏖️ عطلة</option><option value="sick">💊 مرض</option>
-                        <option value="eid">🎉 أعياد</option><option value="recup">🔄 تعويض</option><option value="absent">❌ غياب</option>
+                        <option value="">الحالات</option><option value="work">✅ عمل</option><option value="holiday">🏖️ عطلة</option><option value="sick">💊 مرض</option><option value="eid">🎉 أعياد</option><option value="recup">🔄 تعويض</option><option value="absent">❌ غياب</option>
                     </select>
                 </div>
             </div>
@@ -315,7 +316,6 @@
     <div class="modal-overlay" id="settingsModal">
         <div class="modal-content">
             <h3 style="text-align:center;">الإعدادات</h3>
-            
             <div id="admin-section" style="display:none; margin-bottom:15px;">
                 <div style="background:#e3f2fd; padding:10px; border-radius:10px; margin-bottom:10px;">
                      <label class="form-label" style="color:#1565c0; font-weight:bold;">اسم البرنامج (للكل):</label>
@@ -333,7 +333,6 @@
                     <div id="presets-list" class="preset-list" style="margin-top:10px; max-height:100px; overflow-y:auto;"></div>
                 </div>
             </div>
-
             <div style="background:#e8f5e9; padding:10px; border-radius:10px; margin-bottom:15px;">
                 <label class="form-label">الاسم الكامل:</label><input type="text" id="s-name" class="app-input" placeholder="اسم الموظف">
                 <label class="form-label">تاريخ التحاقي:</label><input type="date" id="s-join" class="app-input">
@@ -352,10 +351,10 @@
     <!-- Printable Area -->
     <div id="printable-area"></div>
 
-    <!-- Firebase SDK -->
+    <!-- Firebase -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, doc, setDoc, getDoc, collection, getDocs, onSnapshot, updateDoc, deleteField, addDoc, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, getDocs, onSnapshot, updateDoc, deleteField, addDoc, serverTimestamp, query, orderBy, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail, sendEmailVerification, setPersistence, browserLocalPersistence, browserSessionPersistence } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
         const firebaseConfig = {
@@ -371,8 +370,9 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
+        
+        enableIndexedDbPersistence(db).catch((err)=>{});
 
-        // --- EXPORTS ---
         window.showLoader = (s) => document.getElementById('loader').style.display = s?'flex':'none';
         window.showError = (id, msg) => { const el=document.getElementById(id); el.textContent=msg; el.style.display='block'; };
         window.switchView = (id) => {
@@ -450,9 +450,8 @@
         window.fbDeleteDay = async (dateKey) => {
             const u = auth.currentUser;
             if(!u) return;
-            try {
-                await updateDoc(doc(db, 'attendance', u.uid), { [`events.${dateKey}`]: deleteField() });
-            } catch(e) { console.error("Error deleting:", e); }
+            try { await updateDoc(doc(db, 'attendance', u.uid), { [`events.${dateKey}`]: deleteField() }); } 
+            catch(e) { console.error(e); }
         };
 
         window.sendAdminMessage = async (text) => {
@@ -464,8 +463,8 @@
                     createdAt: serverTimestamp(),
                     sender: u.uid
                 });
-                alert("تم إرسال الرسالة بنجاح!");
-            } catch(e) { alert("خطأ في الإرسال"); }
+                alert("تم الإرسال");
+            } catch(e) { alert("خطأ"); }
         };
 
         onAuthStateChanged(auth, async (user) => {
@@ -481,7 +480,6 @@
                     if(window.appData.role === 'admin') document.getElementById('admin-section').style.display = 'block';
                 }
 
-                // Listeners
                 onSnapshot(doc(db, "attendance", user.uid), (doc) => {
                     if(doc.exists()) window.appData.events = doc.data().events || {};
                     window.app.renderCalendar();
@@ -489,12 +487,8 @@
                 });
                 onSnapshot(doc(db, "settings", user.uid), (doc) => {
                     if(doc.exists()) window.appData.personal = doc.data() || {joinDate:'', fullName:'', adjustments:[], dismissedMsgs:[], deletedMsgs:[]};
-                    if(!window.appData.personal.dismissedMsgs) window.appData.personal.dismissedMsgs = [];
-                    if(!window.appData.personal.deletedMsgs) window.appData.personal.deletedMsgs = [];
-                    
                     const displayName = window.appData.personal.fullName || user.email.split('@')[0];
                     document.getElementById('u-name').textContent = displayName;
-                    
                     window.app.calcStats();
                     window.app.checkMessages();
                     window.app.checkReportReminder();
@@ -547,7 +541,7 @@
         };
 
         window.app = {
-            // REPORT
+            // Report
             openReportModal: () => document.getElementById('reportModal').style.display = 'flex',
 
             confirmGenerateReport: (type) => {
@@ -567,77 +561,51 @@
 
                 const printArea = document.getElementById('printable-area');
                 
-                // YEARLY REPORT (GRID LAYOUT)
                 if (type === 'year') {
-                    let html = `
-                        <div class="report-container">
-                            <div class="report-header-print">
-                                <h2>${window.appData.global.appName}</h2>
-                                <p>التقرير السنوي: ${yr} | الموظف: ${userName}</p>
-                            </div>
-                            <div class="year-report-grid">
-                    `;
-                    
+                    let html = `<div class="report-container"><div class="report-header-print"><h2>${window.appData.global.appName}</h2><p>التقرير السنوي: ${yr} | الموظف: ${userName}</p></div><div class="year-report-grid">`;
                     for(let m=0; m<12; m++) {
                          let monthEvents = [];
                          for(let k in window.appData.events) {
                              let d = new Date(k);
-                             if(d.getFullYear() === yr && d.getMonth() === m) {
-                                 monthEvents.push({ date: k, ...window.appData.events[k] });
-                             }
+                             if(d.getFullYear() === yr && d.getMonth() === m) monthEvents.push({ date: k, ...window.appData.events[k] });
                          }
                          monthEvents.sort((a,b) => new Date(a.date) - new Date(b.date));
-                         
                          if(monthEvents.length > 0) {
-                             html += `<div class="month-block"><div class="month-title-print">${monthNames[m]}</div><table class="mini-table">`;
+                             html += `<div class="month-block"><div class="month-title-print">${monthNames[m]}</div><table class="mini-table"><tbody>`;
                              monthEvents.forEach(e => {
                                  let typeText = { work:'عمل', holiday:'عطلة', sick:'مرض', absent:'غياب', recup:'تعويض', eid:'عيد' }[e.type] || e.type;
                                  let hrs = e.hours ? e.hours : '';
                                  if(e.type === 'work' || e.eidStatus === 'work') totalHours += (e.hours||0);
                                  html += `<tr><td>${e.date.split('-')[2]}</td><td>${typeText}</td><td>${hrs}</td></tr>`;
                              });
-                             html += `</table></div>`;
+                             html += `</tbody></table></div>`;
                          }
                     }
                     html += `</div><div class="report-summary-print"><span>إجمالي الساعات: ${totalHours.toFixed(1)}</span></div></div>`;
                     printArea.innerHTML = html;
+                    window.print();
+                    printArea.innerHTML = '';
+                    return;
                 } 
-                // MONTHLY REPORT
-                else {
-                    let reportEvents = [];
-                    let workDays = 0, absents = 0;
-                    for(let k in window.appData.events) {
-                        const evt = window.appData.events[k];
-                        const d = new Date(k);
-                        if(d.getFullYear() === yr && (d.getMonth() + 1) === mth) reportEvents.push({ date: k, ...evt });
-                    }
-                    reportEvents.sort((a,b) => new Date(a.date) - new Date(b.date));
 
-                    let rows = '';
-                    reportEvents.forEach(e => {
-                        let typeText = { work:'عمل', holiday:'عطلة', sick:'مرض', absent:'غياب', recup:'تعويض', eid:'عيد' }[e.type] || e.type;
-                        let hrs = e.hours ? e.hours : '-';
-                        let time = (e.start && e.end) ? `${e.start} - ${e.end}` : '-';
-                        if(e.type === 'work' || e.eidStatus === 'work') { totalHours += (e.hours||0); workDays++; }
-                        if(e.type === 'absent') absents++;
-                        rows += `<tr><td>${e.date}</td><td>${typeText}</td><td>${time}</td><td>${hrs}</td></tr>`;
-                    });
-
-                    printArea.innerHTML = `
-                        <div class="report-container">
-                            <div class="report-header-print">
-                                <h2>${window.appData.global.appName}</h2>
-                                <p>تقرير شهر ${mthName} ${yr} | الموظف: ${userName}</p>
-                            </div>
-                            <table class="standard-table">
-                                <thead><tr><th>التاريخ</th><th>الحالة</th><th>التوقيت</th><th>الساعات</th></tr></thead>
-                                <tbody>${rows}</tbody>
-                            </table>
-                            <div class="report-summary-print"><p>أيام العمل: ${workDays} | الساعات: ${totalHours.toFixed(1)} | الغياب: ${absents}</p></div>
-                        </div>
-                    `;
+                let reportEvents = [];
+                let workDays = 0, absents = 0;
+                for(let k in window.appData.events) {
+                    const evt = window.appData.events[k];
+                    const d = new Date(k);
+                    if(d.getFullYear() === yr && (d.getMonth() + 1) === mth) reportEvents.push({ date: k, ...evt });
                 }
-
+                reportEvents.sort((a,b) => new Date(a.date) - new Date(b.date));
+                let rows = '';
+                reportEvents.forEach(e => {
+                    let typeText = { work:'عمل', holiday:'عطلة', sick:'مرض', absent:'غياب', recup:'تعويض', eid:'عيد' }[e.type] || e.type;
+                    let hrs = e.hours ? e.hours : '-';
+                    let time = (e.start && e.end) ? `${e.start} - ${e.end}` : '-';
+                    if(e.type === 'work' || e.eidStatus === 'work') { totalHours += (e.hours||0); workDays++; }
+                    if(e.type === 'absent') absents++;
+                    rows += `<tr><td>${e.date}</td><td>${typeText}</td><td>${time}</td><td>${hrs}</td></tr>`;
+                });
+                printArea.innerHTML = `<div class="report-container"><div class="report-header-print"><h2>${window.appData.global.appName}</h2><p>تقرير شهر ${mthName} ${yr} | الموظف: ${userName}</p></div><table class="standard-table"><thead><tr><th>التاريخ</th><th>الحالة</th><th>التوقيت</th><th>الساعات</th></tr></thead><tbody>${rows}</tbody></table><div class="report-summary-print"><p>أيام العمل: ${workDays} | الساعات: ${totalHours.toFixed(1)} | الغياب: ${absents}</p></div></div>`;
                 setTimeout(() => { window.print(); printArea.innerHTML = ''; }, 300);
             },
 
@@ -680,22 +648,13 @@
                         if(!activePopupMsg) activePopupMsg = msg;
                     }
                 });
-
                 const badge = document.getElementById('msg-badge');
-                if(unreadCount > 0) {
-                    badge.textContent = unreadCount;
-                    badge.style.display = 'flex';
-                } else {
-                    badge.style.display = 'none';
-                }
-
+                if(unreadCount > 0) { badge.textContent = unreadCount; badge.style.display = 'flex'; } else { badge.style.display = 'none'; }
                 if(activePopupMsg) {
                     activeMsgId = activePopupMsg.id;
                     document.getElementById('live-msg-content').textContent = activePopupMsg.content;
                     document.getElementById('msgPopup').style.display = 'flex';
-                } else {
-                    document.getElementById('msgPopup').style.display = 'none';
-                }
+                } else { document.getElementById('msgPopup').style.display = 'none'; }
             },
 
             dismissMessage: () => {
@@ -710,12 +669,10 @@
                 const list = document.getElementById('inbox-list');
                 list.innerHTML = '';
                 const visibleMsgs = window.appData.messages.filter(m => !window.appData.personal.deletedMsgs.includes(m.id));
-
                 if(visibleMsgs.length === 0) list.innerHTML = '<div style="text-align:center; padding:20px; color:#999">لا رسائل</div>';
                 else {
                     visibleMsgs.forEach(msg => {
-                        let dateStr = "الآن";
-                        if(msg.createdAt) dateStr = new Date(msg.createdAt.seconds * 1000).toLocaleDateString('ar-EG');
+                        let dateStr = msg.createdAt ? new Date(msg.createdAt.seconds * 1000).toLocaleDateString('ar-EG') : "الآن";
                         list.innerHTML += `<div class="msg-item"><div class="msg-body">${msg.content}</div><div class="msg-footer"><span>${dateStr}</span><span class="del-icon" onclick="window.app.askDelete('msg', '${msg.id}')">حذف</span></div></div>`;
                     });
                 }
@@ -745,7 +702,6 @@
                 document.getElementById('confirmModal').style.display = 'none';
             },
 
-            // --- Legend Toast ---
             showLegendToast: (msg) => {
                 const toast = document.getElementById('legend-toast');
                 toast.textContent = msg;
@@ -753,40 +709,23 @@
                 setTimeout(() => toast.classList.remove('show-toast'), 3000);
             },
 
-            // Calendar
             checkAutoFill: () => {
                 const today = new Date(); today.setHours(0,0,0,0);
                 let startCheck = new Date(2026, 0, 1);
                 if (today < startCheck) return;
-                
-                let lastStart = '08:00', lastEnd = '16:00';
+                let defStart='08:00', defEnd='16:00';
                 if(window.appData.global.presets && window.appData.global.presets.length > 0) {
-                    lastStart = window.appData.global.presets[0].start;
-                    lastEnd = window.appData.global.presets[0].end;
+                    defStart = window.appData.global.presets[0].start;
+                    defEnd = window.appData.global.presets[0].end;
                 }
-
                 let changes = false;
                 let loopDate = new Date(startCheck);
-
                 while (loopDate < today) {
-                    const k = `${loopDate.getFullYear()}-${String(loopDate.getMonth()+1).padStart(2,'0')}-${String(loopDate.getDate()).padStart(2,'0')}`;
-                    const evt = window.appData.events[k];
-                    
-                    if (evt && evt.type === 'work' && evt.start && evt.end) {
-                        lastStart = evt.start; lastEnd = evt.end;
-                    }
-                    else if (!evt) {
-                        const dNum = loopDate.getDay();
-                        if (dNum !== 0 && dNum !== 6) {
-                            const [h1, m1] = lastStart.split(':').map(Number);
-                            const [h2, m2] = lastEnd.split(':').map(Number);
-                            let diff = (h2*60+m2) - (h1*60+m1);
-                            if(diff < 0) diff += 24*60;
-                            const hrs = parseFloat((diff/60).toFixed(2));
-
-                            window.appData.events[k] = { 
-                                type: 'work', start: lastStart, end: lastEnd, hours: hrs, autoFilled: true 
-                            };
+                    const dNum = loopDate.getDay();
+                    if (dNum !== 0 && dNum !== 6) {
+                        const k = `${loopDate.getFullYear()}-${String(loopDate.getMonth()+1).padStart(2,'0')}-${String(loopDate.getDate()).padStart(2,'0')}`;
+                        if (!window.appData.events[k]) {
+                            window.appData.events[k] = { type:'work', start:defStart, end:defEnd, hours:8, autoFilled:true };
                             changes = true;
                         }
                     }
@@ -806,12 +745,10 @@
                 firstDayIndex = (firstDayIndex === 0) ? 6 : firstDayIndex - 1;
                 const daysInMonth = new Date(y, m + 1, 0).getDate();
                 for(let i=0; i<firstDayIndex; i++) grid.innerHTML += `<div></div>`;
-                
                 for(let i=1; i<=daysInMonth; i++) {
                     const key = `${y}-${String(m+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
                     const evt = window.appData.events[key];
                     let cls = '', txt = '';
-                    
                     const natKey = `${m+1}-${i}`;
                     const isNat = nationalHolidays[natKey];
                     let natClass = '';
@@ -823,31 +760,19 @@
                         else if(evt.type === 'absent') { cls = 'st-absent'; }
                         else if(evt.type === 'recup') { cls = 'st-recup'; }
                         else if(evt.type === 'eid') { cls = 'st-eid'; }
-                    } else if (isNat) {
-                        natClass = 'nat-holiday';
-                    }
+                    } else if (isNat) { natClass = 'nat-holiday'; }
 
                     const currentLoopDate = new Date(y, m, i);
-                    const now = new Date();
-                    now.setHours(0,0,0,0);
+                    const now = new Date(); now.setHours(0,0,0,0);
                     const isFuture = currentLoopDate.setHours(0,0,0,0) > now.getTime();
-                    
                     const isWeekend = (currentLoopDate.getDay() === 0 || currentLoopDate.getDay() === 6);
                     const weekendClass = isWeekend ? 'weekend' : '';
-                    
                     const todayClass = (new Date().toDateString() === new Date(y,m,i).toDateString()) ? 'today' : '';
-                    
                     const futureClass = isFuture ? 'future' : '';
-                    
-                    // Allow clicking future IF it is national holiday
                     const isClickable = !isFuture || isNat;
                     const clickAction = isClickable ? `onclick="window.app.openDay('${key}')"` : '';
 
-                    grid.innerHTML += `
-                        <div class="day-cell ${todayClass} ${weekendClass} ${natClass} ${cls} ${futureClass}" ${clickAction}>
-                            <span>${i}</span>
-                        </div>
-                    `;
+                    grid.innerHTML += `<div class="day-cell ${todayClass} ${weekendClass} ${natClass} ${cls} ${futureClass}" ${clickAction}><span>${i}</span></div>`;
                 }
                 window.app.calcStats();
             },
@@ -859,21 +784,16 @@
                 const hKey = `${dateObj.getMonth()+1}-${dateObj.getDate()}`;
                 const natName = nationalHolidays[hKey];
                 
-                const today = new Date();
-                today.setHours(0,0,0,0);
+                const today = new Date(); today.setHours(0,0,0,0);
                 if(new Date(key).setHours(0,0,0,0) > today.getTime() && !natName) return;
 
                 selectedKey = key;
                 document.getElementById('modal-title').textContent = key;
                 document.getElementById('dayModal').style.display = 'flex';
-                
                 let evt = window.appData.events[key];
                 
-                if (!evt && natName) {
-                    evt = { type: 'eid', eidStatus: 'rest', eidName: natName };
-                } else if (!evt) {
-                    evt = { type: 'work', start: '', end: '', eidStatus: 'work' };
-                }
+                if (!evt && natName) { evt = { type: 'eid', eidStatus: 'rest', eidName: natName }; } 
+                else if (!evt) { evt = { type: 'work', start: '', end: '', eidStatus: 'work' }; }
 
                 document.getElementById('d-type').value = evt.type;
                 document.getElementById('d-start').value = evt.start || '';
@@ -960,57 +880,22 @@
                             }
                             data.hours = parseFloat((diff/60).toFixed(2));
                         }
-                        if(type === 'eid') {
-                            data.eidStatus = 'work';
-                            data.eidName = document.getElementById('d-eid-name').value;
-                        }
-                    } else if (type === 'eid') {
-                        data.eidStatus = 'rest';
-                        data.eidName = document.getElementById('d-eid-name').value;
-                    } else if (type === 'recup') {
-                        data.recupTarget = document.getElementById('d-recup-target').value;
-                    }
+                        if(type === 'eid') { data.eidStatus = 'work'; data.eidName = document.getElementById('d-eid-name').value; }
+                    } else if (type === 'eid') { data.eidStatus = 'rest'; data.eidName = document.getElementById('d-eid-name').value; }
+                    else if (type === 'recup') { data.recupTarget = document.getElementById('d-recup-target').value; }
                     window.appData.events[targetKey] = data;
                 }
                 window.saveData('events', window.appData.events);
                 document.getElementById('dayModal').style.display = 'none';
             },
 
-            askDelete: (type, id) => {
-                deleteType = type || 'day';
-                if(type === 'msg') pendingMsgId = id;
-                document.getElementById('confirmModal').style.display = 'flex';
-            },
-
-            performDelete: () => {
-                if(deleteType === 'day') {
-                    if(window.appData.events[selectedKey]) {
-                        delete window.appData.events[selectedKey];
-                        window.fbDeleteDay(selectedKey);
-                    }
-                    document.getElementById('dayModal').style.display = 'none';
-                    window.app.renderCalendar();
-                } else if(deleteType === 'msg') {
-                    if(!window.appData.personal.deletedMsgs) window.appData.personal.deletedMsgs = [];
-                    window.appData.personal.deletedMsgs.push(pendingMsgId);
-                    window.saveData('personal_settings', window.appData.personal);
-                    window.app.openInbox();
-                }
-                document.getElementById('confirmModal').style.display = 'none';
-            },
-
-            // --- Logic Hub ---
             getLeaveBreakdown: () => {
                 const currentY = new Date(2026, 0, 1).getFullYear();
                 const joinDateStr = window.appData.personal.joinDate;
                 let pools = [];
-
                 if(window.appData.personal.adjustments) {
-                    window.appData.personal.adjustments.forEach((adj, i) => {
-                        pools.push({ id: `adj_${i}`, label: `رصيد سابق/إضافي (${adj.reason})`, total: parseFloat(adj.amount), remaining: parseFloat(adj.amount), type: 'bonus' });
-                    });
+                    window.appData.personal.adjustments.forEach((adj, i) => { pools.push({ id: `adj_${i}`, label: `رصيد سابق/إضافي (${adj.reason})`, total: parseFloat(adj.amount), remaining: parseFloat(adj.amount), type: 'bonus' }); });
                 }
-
                 if(joinDateStr) {
                     const joinD = new Date(joinDateStr);
                     const joinY = joinD.getFullYear();
@@ -1023,25 +908,15 @@
                         if(amount > 0) pools.push({ id: y, label: `رصيد سنة ${y}`, total: amount, remaining: amount, type: 'year' });
                     }
                 }
-
-                const holidays = Object.entries(window.appData.events)
-                    .filter(([k, v]) => v.type === 'holiday')
-                    .sort((a, b) => new Date(a[0]) - new Date(b[0]));
-
+                const holidays = Object.entries(window.appData.events).filter(([k, v]) => v.type === 'holiday').sort((a, b) => new Date(a[0]) - new Date(b[0]));
                 let deductions = [];
                 holidays.forEach(h => {
                     let consumed = false;
                     for(let pool of pools) {
-                        if(pool.remaining > 0) {
-                            pool.remaining--;
-                            deductions.push({ date: h[0], note: `تم خصمه من ${pool.label}`, val: '-1', type: 'neg' });
-                            consumed = true;
-                            break;
-                        }
+                        if(pool.remaining > 0) { pool.remaining--; deductions.push({ date: h[0], note: `تم خصمه من ${pool.label}`, val: '-1', type: 'neg' }); consumed = true; break; }
                     }
                     if(!consumed) deductions.push({ date: h[0], note: 'رصيد غير كافٍ', val: '-1', type: 'neg' });
                 });
-
                 return { pools, deductions };
             },
 
@@ -1063,10 +938,7 @@
                     const k = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
                     const evt = window.appData.events[k];
                     const dayNum = d.getDay();
-                    if(dayNum === 6) {
-                        if(evt && (evt.type === 'work' || (evt.type === 'eid' && evt.eidStatus === 'work'))) sat += 4;
-                        else sat -= 4;
-                    }
+                    if(dayNum === 6) { if(evt && (evt.type === 'work' || (evt.type === 'eid' && evt.eidStatus === 'work'))) sat += 4; else sat -= 4; }
                 }
 
                 for (const [k, evt] of Object.entries(window.appData.events)) {
@@ -1086,9 +958,7 @@
                 for(let k in window.appData.events) {
                     const e = window.appData.events[k];
                     const d = new Date(k);
-                    if((d.getDay()===0 && e.type==='work') || (e.type==='eid' && e.eidStatus==='work')) {
-                        if(!used.includes(k)) pending++;
-                    }
+                    if((d.getDay()===0 && e.type==='work') || (e.type==='eid' && e.eidStatus==='work')) { if(!used.includes(k)) pending++; }
                 }
                 document.getElementById('st-net').innerHTML = `<span class="${net>=0?'txt-green':'txt-red'}">${net.toFixed(1)}</span>`;
                 document.getElementById('st-sat').innerHTML = `<span class="${sat>=0?'txt-green':'txt-red'}">${sat}</span>`;
@@ -1110,20 +980,12 @@
 
                 if (cat === 'leave') {
                     const bd = window.app.getLeaveBreakdown();
-                    
                     list.innerHTML += `<div class="details-header">الأرصدة المتاحة (FIFO):</div>`;
-                    bd.pools.forEach(p => {
-                        if(p.remaining > 0) list.innerHTML += `<div class="detail-item pos"><span>${p.label}</span><span class="d-val">${p.remaining} يوم</span></div>`;
-                    });
-
+                    bd.pools.forEach(p => { if(p.remaining > 0) list.innerHTML += `<div class="detail-item pos"><span>${p.label}</span><span class="d-val">${p.remaining} يوم</span></div>`; });
                     if(bd.deductions.length > 0) {
                         list.innerHTML += `<div class="details-header">سجل الاستهلاك:</div>`;
-                        bd.deductions.reverse().forEach(d => {
-                            list.innerHTML += `<div class="detail-item neg" onclick="window.app.openDay('${d.date}')"><span>${d.date} <small>(${d.note})</small></span><span class="d-val">-1</span></div>`;
-                        });
-                    } else {
-                        list.innerHTML += `<div style="text-align:center; padding:10px;">لم يتم استهلاك أي عطلة</div>`;
-                    }
+                        bd.deductions.reverse().forEach(d => { list.innerHTML += `<div class="detail-item neg" onclick="window.app.openDay('${d.date}')"><span>${d.date} <small>(${d.note})</small></span><span class="d-val">-1</span></div>`; });
+                    } else { list.innerHTML += `<div style="text-align:center; padding:10px;">لم يتم استهلاك أي عطلة</div>`; }
                     document.getElementById('searchModal').style.display = 'flex';
                     return;
                 }
@@ -1185,16 +1047,18 @@
             performSearch: () => {
                 const dayVal = document.getElementById('search-day-name').value;
                 const typeVal = document.getElementById('search-type').value;
+                const monthVal = document.getElementById('search-month').value;
                 const list = document.getElementById('search-results');
                 list.innerHTML = '';
-                if(dayVal === "" && typeVal === "") return;
+                if(dayVal === "" && typeVal === "" && monthVal === "") return;
                 const results = [];
                 for(let k in window.appData.events) {
                     const evt = window.appData.events[k];
                     const d = new Date(k);
                     let matchDay = (dayVal === "") || (d.getDay() == parseInt(dayVal));
                     let matchType = (typeVal === "") || (evt.type === typeVal);
-                    if(matchDay && matchType) results.push({date:k, ...evt});
+                    let matchMonth = (monthVal === "") || (d.getMonth() + 1 == parseInt(monthVal));
+                    if(matchDay && matchType && matchMonth) results.push({date:k, ...evt});
                 }
                 results.sort((a,b) => new Date(b.date) - new Date(a.date));
                 if(results.length === 0) list.innerHTML = '<div style="text-align:center; padding:10px;">لا توجد نتائج</div>';
@@ -1234,4 +1098,56 @@
             },
 
             addAdj: () => {
-                const d = document.getElementById('adj-days'
+                const d = document.getElementById('adj-days').value;
+                const r = document.getElementById('adj-note').value;
+                if(d) {
+                    if(!window.appData.personal.adjustments) window.appData.personal.adjustments = [];
+                    window.appData.personal.adjustments.push({amount:d, reason:r});
+                    document.getElementById('adj-days').value = '';
+                    document.getElementById('adj-note').value = '';
+                    window.app.renderSettingsLists();
+                }
+            },
+
+            delAdj: (i) => {
+                window.appData.personal.adjustments.splice(i, 1);
+                window.app.renderSettingsLists();
+            },
+
+            renderSettingsLists: () => {
+                const pl = document.getElementById('presets-list');
+                pl.innerHTML = '';
+                if(window.appData.global.presets) {
+                    window.appData.global.presets.forEach((p, i) => {
+                        pl.innerHTML += `<div class="preset-item"><span>${p.label} (${p.start}-${p.end})</span> <span class="del-icon" onclick="window.app.delPreset(${i})">X</span></div>`;
+                    });
+                }
+                const al = document.getElementById('adj-list');
+                al.innerHTML = '';
+                if(window.appData.personal.adjustments) {
+                    window.appData.personal.adjustments.forEach((a, i) => {
+                        al.innerHTML += `<div class="preset-item"><span>+${a.amount} (${a.reason})</span> <span class="del-icon" onclick="window.app.delAdj(${i})">X</span></div>`;
+                    });
+                }
+            },
+
+            saveSettings: () => {
+                window.appData.personal.joinDate = document.getElementById('s-join').value;
+                window.appData.personal.fullName = document.getElementById('s-name').value;
+                window.appData.global.appName = document.getElementById('p-app-name').value || window.appData.global.appName;
+                
+                window.saveData('personal_settings', window.appData.personal);
+                if(window.appData.role === 'admin') window.saveData('global_config', window.appData.global);
+                document.getElementById('settingsModal').style.display = 'none';
+            },
+
+            showLegendToast: (msg) => {
+                const toast = document.getElementById('legend-toast');
+                toast.textContent = msg;
+                toast.classList.add('show-toast');
+                setTimeout(() => toast.classList.remove('show-toast'), 3000);
+            }
+        };
+    </script>
+</body>
+</html>
