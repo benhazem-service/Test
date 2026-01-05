@@ -29,8 +29,23 @@
         * { box-sizing: border-box; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
         body { font-family: 'Cairo', sans-serif; background-color: var(--bg); margin: 0; padding-bottom: 80px; color: var(--text); transition: background 0.3s, color 0.3s; }
 
-        /* Report Container */
-        #report-container { position: fixed; left: -9999px; top: 0; width: 210mm; min-height: 297mm; background: white; color: black; padding: 20px; font-family: 'Cairo', sans-serif; }
+        /* --- إصلاح مشكلة التقرير الفارغ --- */
+        #report-container {
+            display: none; /* مخفي افتراضياً */
+            position: fixed; 
+            top: 0; left: 0; 
+            width: 100%; height: 100%; 
+            background: white; 
+            color: black; 
+            padding: 20px; 
+            font-family: 'Cairo', sans-serif;
+            z-index: 99999; /* يظهر فوق كل شيء عند التفعيل */
+            overflow-y: auto;
+        }
+        /* عند التفعيل من الجافاسكريبت */
+        #report-container.visible {
+            display: block;
+        }
 
         /* Styles */
         #auth-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, var(--primary), #4cc9f0); z-index: 9999; display: flex; justify-content: center; align-items: center; flex-direction: column; }
@@ -533,6 +548,7 @@
                 window.showLoader(true);
                 const pc = document.getElementById('report-container');
                 pc.innerHTML = '';
+                pc.classList.add('visible'); // Show container for html2pdf to see
                 
                 // 1. Gather Data
                 const yr = currentDate.getFullYear();
@@ -640,11 +656,12 @@
                     margin: 10,
                     filename: fileName,
                     image: { type: 'jpeg', quality: 0.98 },
-                    html2canvas: { scale: 2, useCORS: true },
+                    html2canvas: { scale: 2, useCORS: true, scrollY: 0 },
                     jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
                 };
 
                 html2pdf().set(opt).from(pc).save().then(() => {
+                    pc.classList.remove('visible');
                     window.showLoader(false);
                 });
             },
@@ -965,7 +982,6 @@
                      const used = Object.values(window.appData.events).filter(e => e.type === 'recup').map(e => e.recupTarget);
                      for(const [k, evt] of Object.entries(window.appData.events)) {
                         const d = new Date(k);
-                        // Filter Sunday logic in Details view too
                         const isNat = nationalHolidays[`${d.getMonth()+1}-${d.getDate()}`];
                         const isEid = evt.type === 'eid';
 
