@@ -6,7 +6,9 @@
     <title>المدير الذكي 2026</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
+    <!-- مكتبة PDF اختيارية، سنعتمد على الطباعة المباشرة لدقتها -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
     <style>
         :root {
             --primary: #4361ee; --primary-dark: #3a0ca3;
@@ -28,75 +30,64 @@
         * { box-sizing: border-box; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
         body { font-family: 'Cairo', sans-serif; background-color: var(--bg); margin: 0; padding-bottom: 80px; color: var(--text); transition: background 0.3s, color 0.3s; }
 
-        /* --- إعدادات الطباعة (مهمة جداً) --- */
+        /* --- إعدادات الطباعة (CSS Print) --- */
         @media print {
-            /* إخفاء كل شيء في الصفحة */
-            body * {
-                visibility: hidden;
-            }
-            /* إظهار حاوية التقرير ومحتوياتها فقط */
-            #report-container, #report-container * {
-                visibility: visible;
-            }
-            /* تنسيق الحاوية لتملأ الورقة */
+            body * { visibility: hidden; }
+            #report-container, #report-container * { visibility: visible; }
             #report-container {
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 100%;
-                margin: 0;
-                padding: 0;
-                background: white;
-                color: black;
-                z-index: 99999999;
-                display: block !important;
+                position: absolute; left: 0; top: 0; width: 100%; margin: 0; padding: 0;
+                background: white; color: black; z-index: 99999999; display: block !important;
             }
-            /* إلغاء أي هوامش للمتصفح */
-            @page { margin: 1cm; size: auto; }
-            
-            /* إخفاء الأزرار أو العناصر غير المرغوبة داخل التقرير إن وجدت */
+            @page { size: A4; margin: 5mm; } /* هوامش صغيرة لضمان صفحة واحدة */
             .no-print { display: none !important; }
         }
 
-        /* --- حاوية التقرير (للعرض قبل الطباعة) --- */
+        /* --- حاوية التقرير --- */
         #report-container {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; 
-            height: 100vh;
-            background: #ffffff; 
-            color: #000000;
-            padding: 20px;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100vh;
+            background: #ffffff; color: #000000; padding: 15px;
             font-family: 'Cairo', sans-serif;
-            z-index: -9999;
-            opacity: 0;
-            pointer-events: none;
-            overflow-y: auto;
+            z-index: -9999; opacity: 0; pointer-events: none; overflow-y: auto;
         }
+        #report-container.active-print { z-index: 999999; opacity: 1; background: white; }
 
-        /* عند التفعيل للتحضير */
-        #report-container.active-print {
-            z-index: 999999;
-            opacity: 1;
-            background: white;
-        }
+        /* تنسيقات التقارير */
+        .report-header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 5px; margin-bottom: 10px; }
+        .report-header h1 { font-size: 18px; margin: 0; }
+        .report-header h3 { font-size: 14px; margin: 2px 0; }
+        .report-header p { font-size: 12px; margin: 0; }
 
-        /* تنسيقات التقرير الداخلي */
-        .report-header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px; }
-        .report-summary { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; justify-content: center; direction: rtl; }
-        .report-box { border: 1px solid #ccc; padding: 10px; border-radius: 5px; min-width: 100px; text-align: center; flex: 1; }
-        .report-box h3 { margin: 0; font-size: 12px; color: #555; }
-        .report-box p { margin: 5px 0 0 0; font-size: 16px; font-weight: bold; }
-        .report-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 12px; direction: rtl; }
-        .report-table th, .report-table td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+        /* تنسيق التقرير الشهري (جدول مضغوط) */
+        .report-table { width: 100%; border-collapse: collapse; margin-top: 5px; font-size: 10px; direction: rtl; }
+        .report-table th, .report-table td { border: 1px solid #666; padding: 3px; text-align: center; height: 18px; }
         .report-table th { background-color: #eee; font-weight: bold; }
 
-        /* Auth Styles */
-        #auth-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, var(--primary), #4cc9f0); z-index: 9999; display: flex; justify-content: center; align-items: center; flex-direction: column; }
-        .auth-card { background: rgba(255,255,255,0.98); padding: 30px; border-radius: 24px; width: 90%; max-width: 380px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
-        body.dark-mode .auth-card { background: #1e1e1e; color: #fff; }
-        .auth-header h2 { color: var(--primary-dark); margin: 0 0 10px 0; }
-        body.dark-mode .auth-header h2 { color: var(--primary); }
+        /* تنسيق التقرير السنوي (شبكة المربعات) */
+        .year-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr); /* 3 أعمدة */
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .month-box {
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 8px;
+            text-align: center;
+            background-color: #fcfcfc;
+            page-break-inside: avoid; /* منع انقسام المربع بين الصفحات */
+        }
+        .month-box h4 { margin: 0 0 5px 0; background: #eee; padding: 2px; border-radius: 4px; font-size: 12px; }
+        .month-stat-row { display: flex; justify-content: space-between; font-size: 10px; margin-bottom: 2px; border-bottom: 1px dotted #ccc; }
+        .month-stat-row:last-child { border-bottom: none; }
+        
+        /* ملخصات علوية */
+        .report-summary { display: flex; gap: 5px; margin-bottom: 10px; flex-wrap: wrap; justify-content: center; direction: rtl; }
+        .report-box { border: 1px solid #ccc; padding: 5px; border-radius: 5px; min-width: 80px; text-align: center; flex: 1; }
+        .report-box h3 { margin: 0; font-size: 10px; color: #555; }
+        .report-box p { margin: 2px 0 0 0; font-size: 12px; font-weight: bold; }
+
+        /* باقي الستايلات الافتراضية */
         .input-group { position: relative; margin-bottom: 15px; }
         .app-input { width: 100%; padding: 12px; border: 2px solid var(--border); border-radius: 12px; font-family: inherit; font-size: 1rem; outline: none; transition: 0.3s; background: var(--surface); color: var(--text); }
         .app-input:focus { border-color: var(--primary); }
@@ -199,7 +190,7 @@
     
     <div id="legend-toast"></div>
 
-    <!-- Hidden Report Container for Printing -->
+    <!-- Hidden Report Container for PDF (Fixed) -->
     <div id="report-container"></div>
 
     <!-- Auth System -->
@@ -290,7 +281,6 @@
     </div>
 
     <!-- Modals -->
-    <!-- Export Selection Modal -->
     <div class="modal-overlay" id="exportModal">
         <div class="modal-content">
             <h3 style="text-align:center;">اختر نوع الطباعة</h3>
@@ -583,6 +573,7 @@
                 window.showLoader(true);
                 const pc = document.getElementById('report-container');
                 pc.innerHTML = '';
+                pc.classList.add('active-print'); 
                 
                 // 1. Gather Data
                 const yr = currentDate.getFullYear();
@@ -590,112 +581,139 @@
                 const appName = window.appData.global.appName || 'نظام الحضور الذكي';
                 const userName = window.appData.personal.fullName || 'موظف';
                 let periodStr = '';
-                let eventsList = [];
+                
+                // --- Yearly Grid Report Logic ---
+                if(type === 'year') {
+                    periodStr = `سنة ${yr}`;
+                    
+                    // Init 12 months buckets
+                    let monthBuckets = [];
+                    for(let i=0; i<12; i++) {
+                        monthBuckets.push({ work:0, sick:0, absent:0, leave:0, eid:0 });
+                    }
 
-                if(type === 'month') {
+                    // Fill Data
+                    for(const [k, evt] of Object.entries(window.appData.events)) {
+                        const d = new Date(k);
+                        if(d.getFullYear() === yr) {
+                            let mIndex = d.getMonth();
+                            if(evt.type==='work'||(evt.type==='eid'&&evt.eidStatus==='work')) {
+                                monthBuckets[mIndex].work += evt.hours || 0;
+                            }
+                            if(evt.type==='sick') monthBuckets[mIndex].sick++;
+                            if(evt.type==='absent') monthBuckets[mIndex].absent++;
+                            if(evt.type==='holiday') monthBuckets[mIndex].leave++;
+                        }
+                    }
+
+                    // Build HTML Grid
+                    let gridHtml = `<div class="year-grid">`;
+                    monthNames.forEach((name, i) => {
+                        gridHtml += `
+                            <div class="month-box">
+                                <h4>${name}</h4>
+                                <div class="month-stat-row"><span>عمل:</span> <b>${monthBuckets[i].work.toFixed(1)}س</b></div>
+                                <div class="month-stat-row"><span>مرض:</span> <b>${monthBuckets[i].sick}ي</b></div>
+                                <div class="month-stat-row"><span>غياب:</span> <b>${monthBuckets[i].absent}ي</b></div>
+                                <div class="month-stat-row"><span>عطلة:</span> <b>${monthBuckets[i].leave}ي</b></div>
+                            </div>
+                        `;
+                    });
+                    gridHtml += `</div>`;
+
+                    pc.innerHTML = `
+                        <div class="report-header">
+                            <h1>${appName}</h1>
+                            <h3>التقرير السنوي الشامل - ${periodStr}</h3>
+                            <p>الموظف: ${userName}</p>
+                        </div>
+                        ${gridHtml}
+                        <div style="margin-top:20px; font-size:10px; text-align:center;">تاريخ الاستخراج: ${new Date().toLocaleDateString('ar-EG')}</div>
+                    `;
+
+                } 
+                // --- Monthly Detail Report Logic ---
+                else {
                     periodStr = `${monthNames[mth]} ${yr}`;
+                    let eventsList = [];
                     for(const [k, evt] of Object.entries(window.appData.events)) {
                         const d = new Date(k);
                         if(d.getFullYear() === yr && d.getMonth() === mth) eventsList.push({date:k, ...evt});
                     }
-                } else {
-                    periodStr = `سنة ${yr}`;
-                    for(const [k, evt] of Object.entries(window.appData.events)) {
-                        const d = new Date(k);
-                        if(d.getFullYear() === yr) eventsList.push({date:k, ...evt});
-                    }
-                }
-                eventsList.sort((a,b) => new Date(a.date) - new Date(b.date));
+                    eventsList.sort((a,b) => new Date(a.date) - new Date(b.date));
 
-                // 2. Stats
-                let net=0, sat=0, workedDays=0, absentDays=0;
-                const breakdown = window.app.getLeaveBreakdown();
-                const totalLeave = breakdown.pools.reduce((sum, pool) => sum + pool.remaining, 0);
+                    // Stats
+                    let net=0, sat=0, workedDays=0, absentDays=0;
+                    const breakdown = window.app.getLeaveBreakdown();
+                    const totalLeave = breakdown.pools.reduce((sum, pool) => sum + pool.remaining, 0);
 
-                eventsList.forEach(e => {
-                    if(e.type === 'work' || (e.type === 'eid' && e.eidStatus === 'work')) {
-                        workedDays++;
-                        net += (e.hours - 8);
-                        const d = new Date(e.date);
-                        if(d.getDay() === 6) sat += 4; 
-                    }
-                    if(e.type === 'absent') { absentDays++; net -= 8; }
-                });
-
-                // 3. Build HTML
-                let html = `
-                    <div class="report-header">
-                        <h1 style="margin:0;">${appName}</h1>
-                        <h3 style="margin:5px 0;">تقرير الحضور - ${periodStr}</h3>
-                        <p>الموظف: ${userName}</p>
-                    </div>
-
-                    <div class="report-summary">
-                        <div class="report-box"><h3>رصيد العطلة الحالي</h3><p>${totalLeave}</p></div>
-                        <div class="report-box"><h3>صافي الساعات (الفترة)</h3><p>${net.toFixed(1)}</p></div>
-                        <div class="report-box"><h3>رصيد السبت (الفترة)</h3><p>${sat}</p></div>
-                        <div class="report-box"><h3>أيام العمل</h3><p>${workedDays}</p></div>
-                        <div class="report-box"><h3>أيام الغياب</h3><p>${absentDays}</p></div>
-                    </div>
-
-                    <table class="report-table">
-                        <thead>
-                            <tr>
-                                <th>التاريخ</th>
-                                <th>اليوم</th>
-                                <th>الحالة</th>
-                                <th>التوقيت / الساعات</th>
-                                <th>ملاحظات</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                `;
-
-                if(eventsList.length === 0) {
-                    html += `<tr><td colspan="5" style="text-align:center;">لا توجد سجلات لهذه الفترة</td></tr>`;
-                } else {
                     eventsList.forEach(e => {
-                        const dObj = new Date(e.date);
-                        const dayName = dayNames[dObj.getDay()===0?6:dObj.getDay()-1];
-                        let typeAr = { work:'عمل', holiday:'عطلة', sick:'مرض', absent:'غياب', recup:'تعويض', eid:'عيد' }[e.type] || e.type;
-                        let timeInfo = '';
-                        if(e.start && e.end) timeInfo = `${e.start} - ${e.end} (${e.hours}س)`;
-                        else if(e.hours) timeInfo = `${e.hours}س`;
-                        else if(e.type === 'sick') timeInfo = '1 يوم';
-                        
-                        html += `
-                            <tr>
-                                <td>${e.date}</td>
-                                <td>${dayName}</td>
-                                <td>${typeAr}</td>
-                                <td style="direction:ltr; text-align:right;">${timeInfo}</td>
-                                <td>${e.note || e.eidName || ''}</td>
-                            </tr>
-                        `;
+                        if(e.type === 'work' || (e.type === 'eid' && e.eidStatus === 'work')) {
+                            workedDays++;
+                            net += (e.hours - 8);
+                            const d = new Date(e.date);
+                            if(d.getDay() === 6) sat += 4; 
+                        }
+                        if(e.type === 'absent') { absentDays++; net -= 8; }
                     });
+
+                    let html = `
+                        <div class="report-header">
+                            <h1>${appName}</h1>
+                            <h3>تقرير شهري - ${periodStr}</h3>
+                            <p>الموظف: ${userName}</p>
+                        </div>
+
+                        <div class="report-summary">
+                            <div class="report-box"><h3>رصيد العطلة</h3><p>${totalLeave}</p></div>
+                            <div class="report-box"><h3>صافي الساعات</h3><p>${net.toFixed(1)}</p></div>
+                            <div class="report-box"><h3>رصيد السبت</h3><p>${sat}</p></div>
+                            <div class="report-box"><h3>أيام العمل</h3><p>${workedDays}</p></div>
+                        </div>
+
+                        <table class="report-table">
+                            <thead>
+                                <tr>
+                                    <th>التاريخ</th>
+                                    <th>اليوم</th>
+                                    <th>الحالة</th>
+                                    <th>التوقيت</th>
+                                    <th>ملاحظات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                    `;
+
+                    if(eventsList.length === 0) {
+                        html += `<tr><td colspan="5" style="text-align:center;">لا سجلات</td></tr>`;
+                    } else {
+                        eventsList.forEach(e => {
+                            const dObj = new Date(e.date);
+                            const dayName = dayNames[dObj.getDay()===0?6:dObj.getDay()-1];
+                            let typeAr = { work:'عمل', holiday:'عطلة', sick:'مرض', absent:'غياب', recup:'تعويض', eid:'عيد' }[e.type] || e.type;
+                            let timeInfo = (e.hours) ? `${e.hours}س` : '-';
+                            if(e.start && e.end) timeInfo += ` (${e.start}-${e.end})`;
+                            
+                            html += `
+                                <tr>
+                                    <td>${e.date}</td>
+                                    <td>${dayName}</td>
+                                    <td>${typeAr}</td>
+                                    <td style="direction:ltr">${timeInfo}</td>
+                                    <td>${e.note || ''}</td>
+                                </tr>
+                            `;
+                        });
+                    }
+                    html += `</tbody></table>`;
+                    pc.innerHTML = html;
                 }
 
-                html += `</tbody></table>
-                    <div style="margin-top:30px; font-size:10px; color:#777; text-align:center;">
-                        تم استخراج هذا التقرير بتاريخ ${new Date().toLocaleString('ar-EG')}
-                    </div>
-                `;
-
-                pc.innerHTML = html;
-                pc.classList.add('active-print'); // Show before print
-
-                // Allow browser to render, then print
+                // 4. Trigger Print
                 setTimeout(() => {
                     window.showLoader(false);
                     window.print();
-                    
-                    // After print dialog closes (or user cancels)
-                    // Note: Browsers block execution until dialog closes
-                    // But to be safe, we leave it visible for a moment or hide on interaction
-                    // A simple approach is to hide it after a small delay
-                    setTimeout(() => {
-                        pc.classList.remove('active-print');
-                    }, 500);
+                    setTimeout(() => { pc.classList.remove('active-print'); }, 1000);
                 }, 500);
             },
 
