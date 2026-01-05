@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>المدير الذكي 2026</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
-    <!-- مكتبات خارجية -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
@@ -30,27 +29,28 @@
         * { box-sizing: border-box; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
         body { font-family: 'Cairo', sans-serif; background-color: var(--bg); margin: 0; padding-bottom: 80px; color: var(--text); transition: background 0.3s, color 0.3s; }
 
-        /* --- حاوية التقرير (الحل الجذري للملف الفارغ) --- */
+        /* --- حاوية التقرير (الحل الجذري) --- */
         #report-container {
+            /* إخفاء ذكي: ليس display:none بل إبعاد خارج الشاشة */
             position: fixed;
             top: 0; left: 0;
-            width: 100%; height: 100%;
-            background: #ffffff; color: #000000;
+            width: 100%; 
+            min-height: 100vh;
+            background: #ffffff; 
+            color: #000000;
             padding: 20px;
             font-family: 'Cairo', sans-serif;
-            /* مخفي خلف التطبيق */
-            z-index: -9999;
-            opacity: 0;
+            z-index: -100; /* خلف كل شيء */
+            opacity: 0;    /* شفاف */
             pointer-events: none;
-            overflow-y: auto;
-            transform: translateX(-9999px); /* إبعاد تام */
+            overflow-y: visible; /* مهم جداً لكي يتمكن html2canvas من التقاط المحتوى الطويل */
         }
-        /* كلاس التفعيل: يظهر للتصوير */
+
+        /* عند التفعيل للطباعة */
         #report-container.active-print {
-            z-index: 99999;
-            opacity: 1;
-            transform: translateX(0);
-            background: white;
+            z-index: 999999; /* فوق أعلى طبقة */
+            opacity: 1;      /* مرئي تماماً */
+            background: white; /* خلفية بيضاء صريحة لمنع الشفافية */
         }
 
         /* تنسيقات التقرير الداخلي */
@@ -59,7 +59,8 @@
         .report-box { border: 1px solid #ccc; padding: 10px; border-radius: 5px; min-width: 100px; text-align: center; flex: 1; }
         .report-box h3 { margin: 0; font-size: 12px; color: #555; }
         .report-box p { margin: 5px 0 0 0; font-size: 16px; font-weight: bold; }
-        .report-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 12px; direction: rtl; }
+        .report-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 12px; direction: rtl; page-break-inside: auto; }
+        .report-table tr { page-break-inside: avoid; page-break-after: auto; }
         .report-table th, .report-table td { border: 1px solid #ccc; padding: 8px; text-align: center; }
         .report-table th { background-color: #eee; font-weight: bold; }
 
@@ -171,7 +172,7 @@
     
     <div id="legend-toast"></div>
 
-    <!-- Hidden Report Container for PDF (Fixed) -->
+    <!-- Hidden Report Container -->
     <div id="report-container"></div>
 
     <!-- Auth System -->
@@ -234,7 +235,6 @@
             <div class="stat-card" onclick="window.app.showDetails('leave')"><h4>رصيد العطلة</h4><div class="val" id="st-leave">0</div><div class="sub">تراكمي FIFO</div></div>
             <div class="stat-card" onclick="window.app.showDetails('week')"><h4>هذا الأسبوع</h4><div class="val" id="st-week">0</div></div>
             <div class="stat-card" onclick="window.app.showDetails('month')"><h4>هذا الشهر</h4><div class="val" id="st-month">0</div></div>
-            <!-- Updated Year Card -->
             <div class="stat-card full-width" onclick="window.app.showDetails('year')"><h4>المجموع السنوي</h4><div class="val" id="st-year">0</div></div>
         </div>
 
@@ -555,7 +555,7 @@
                 window.showLoader(true);
                 const pc = document.getElementById('report-container');
                 pc.innerHTML = '';
-                pc.classList.add('active-print'); 
+                pc.classList.add('active-print'); // Ensure visibility
                 
                 // 1. Gather Data
                 const yr = currentDate.getFullYear();
@@ -668,11 +668,13 @@
                     jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
                 };
 
+                // Add slight delay to ensure rendering
                 setTimeout(() => {
                     html2pdf().set(opt).from(pc).save().then(() => {
                         pc.classList.remove('active-print');
                         window.showLoader(false);
-                    }).catch(() => {
+                    }).catch(err => {
+                        console.error(err);
                         pc.classList.remove('active-print');
                         window.showLoader(false);
                     });
@@ -863,7 +865,7 @@
                 return { pools, deductions };
             },
             calcStats: () => {
-                let net=0, sat=0, leave=0, pending=0, tWeek=0, tMonth=0, tYear=0, tYearWorkHours=0, tSickDays=0, tTotalDays=0;
+                let net=0, sat=0, leave=0, pending=0, tWeek=0, tMonth=0, tYear=0, tYearWorkHours=0, tSickDays=0, tYearWorkDays=0;
                 let yr=currentDate.getFullYear(), mth=currentDate.getMonth(), today=new Date();
                 const weekStart=new Date(today); weekStart.setDate(today.getDate()-today.getDay()); weekStart.setHours(0,0,0,0);
                 const weekEnd=new Date(weekStart); weekEnd.setDate(weekStart.getDate()+6); weekEnd.setHours(23,59,59,999);
@@ -887,7 +889,7 @@
                      const d = new Date(k);
                      if(d.getFullYear()===yr) {
                          let h=0; 
-                         // Only work hours count for week/month/year totals. Sick is excluded.
+                         // Only count work hours for Week/Month/Year totals (exclude sick)
                          if(evt.type==='work'||(evt.type==='eid'&&evt.eidStatus==='work')) {
                              h=evt.hours;
                              tYear += h;
@@ -895,10 +897,9 @@
                              if(d>=weekStart&&d<=weekEnd) tWeek += h;
                              
                              // Stats for Annual Card
-                             tYearWorkHours += h; // Sum of hours
+                             tYearWorkHours += h;
                          }
                          
-                         // Net hours balance calculation
                          if(evt.type==='work'||(evt.type==='eid'&&evt.eidStatus==='work')) net+=(evt.hours-8); else if(evt.type==='absent') net-=8;
                          
                          if(evt.type==='sick') {
@@ -921,10 +922,7 @@
                 document.getElementById('st-leave').textContent = leave.toFixed(1); document.getElementById('st-sunday').textContent = pending;
                 document.getElementById('st-week').textContent = tWeek.toFixed(1); document.getElementById('st-month').textContent = tMonth.toFixed(1); 
                 
-                // Updated Annual Total Layout
-                // Total hours sum is just the work hours since sick is days
-                let totalSum = tYearWorkHours; // + (tSickDays * 0) since sick is excluded from hours total requested
-                
+                // Updated Annual Total Layout: Work | Sick | Total (Work Hours)
                 document.getElementById('st-year').innerHTML = `
                     <div style="display:flex; justify-content:space-around; align-items:center; width:100%;">
                         <div style="display:flex; flex-direction:column;">
@@ -939,7 +937,7 @@
                         <div style="width:1px; height:25px; background:#e0e0e0;"></div>
                         <div style="display:flex; flex-direction:column;">
                             <span style="font-size:0.7rem; color:#888;">مجموع</span>
-                            <span style="font-size:1.1rem; font-weight:bold; color:var(--text)">${totalSum.toFixed(0)}</span>
+                            <span style="font-size:1.1rem; font-weight:bold; color:var(--text)">${tYearWorkHours.toFixed(0)}</span>
                         </div>
                     </div>
                 `;
@@ -1045,13 +1043,16 @@
             performSearch: () => { /* Same as before */ },
             openSettings: () => {
                 document.getElementById('s-join').value = window.appData.personal.joinDate||''; document.getElementById('s-name').value = window.appData.personal.fullName||'';
+                // Load NFC Settings
                 const nfc = window.appData.personal.nfc || {enabled:false, serial:''};
                 document.getElementById('s-nfc-toggle').checked = nfc.enabled;
                 document.getElementById('s-nfc-serial').value = nfc.serial;
                 window.app.toggleNFCConfig();
+                
                 window.app.renderSettingsLists(); document.getElementById('settingsModal').style.display='flex';
             },
             
+            // --- FIX FOR ADMIN PRESETS BUTTON ---
             addPreset: () => {
                 const n = document.getElementById('p-name').value;
                 const s = document.getElementById('p-start').value;
@@ -1059,9 +1060,11 @@
                 if(n && s && e) {
                     if(!window.appData.global.presets) window.appData.global.presets = [];
                     window.appData.global.presets.push({label:n, start:s, end:e});
+                    // Clear inputs
                     document.getElementById('p-name').value = '';
                     document.getElementById('p-start').value = '';
                     document.getElementById('p-end').value = '';
+                    // Force Render immediately
                     window.app.renderSettingsLists();
                 } else {
                     alert("يرجى ملء جميع الحقول (الاسم، البداية، النهاية)");
@@ -1078,7 +1081,12 @@
                 window.appData.personal.joinDate = document.getElementById('s-join').value;
                 window.appData.personal.fullName = document.getElementById('s-name').value;
                 window.appData.global.appName = document.getElementById('p-app-name').value || window.appData.global.appName;
-                window.appData.personal.nfc = { enabled: document.getElementById('s-nfc-toggle').checked, serial: document.getElementById('s-nfc-serial').value };
+                // Save NFC
+                window.appData.personal.nfc = {
+                    enabled: document.getElementById('s-nfc-toggle').checked,
+                    serial: document.getElementById('s-nfc-serial').value
+                };
+                
                 window.saveData('personal_settings', window.appData.personal);
                 if(window.appData.role === 'admin') window.saveData('global_config', window.appData.global);
                 document.getElementById('settingsModal').style.display = 'none';
