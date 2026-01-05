@@ -29,28 +29,31 @@
         * { box-sizing: border-box; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
         body { font-family: 'Cairo', sans-serif; background-color: var(--bg); margin: 0; padding-bottom: 80px; color: var(--text); transition: background 0.3s, color 0.3s; }
 
-        /* --- حاوية التقرير (الحل الجذري) --- */
+        /* --- حاوية التقرير (تم إصلاحها لضمان الطباعة) --- */
         #report-container {
-            /* إخفاء ذكي: ليس display:none بل إبعاد خارج الشاشة */
             position: fixed;
-            top: 0; left: 0;
+            top: 0; 
+            left: 0;
             width: 100%; 
-            min-height: 100vh;
+            height: 100vh; /* يغطي الشاشة بالكامل */
             background: #ffffff; 
             color: #000000;
             padding: 20px;
             font-family: 'Cairo', sans-serif;
-            z-index: -100; /* خلف كل شيء */
-            opacity: 0;    /* شفاف */
-            pointer-events: none;
-            overflow-y: visible; /* مهم جداً لكي يتمكن html2canvas من التقاط المحتوى الطويل */
+            
+            /* الوضع الافتراضي: مخفي خلف الشاشة */
+            z-index: -9999;
+            opacity: 0;
+            visibility: hidden; /* إضافة visibility لضمان عدم التداخل */
+            overflow-y: auto;
         }
 
-        /* عند التفعيل للطباعة */
+        /* عند التفعيل: يظهر في المقدمة */
         #report-container.active-print {
-            z-index: 999999; /* فوق أعلى طبقة */
-            opacity: 1;      /* مرئي تماماً */
-            background: white; /* خلفية بيضاء صريحة لمنع الشفافية */
+            z-index: 999999; /* فوق كل العناصر بما فيها اللودر */
+            opacity: 1;
+            visibility: visible;
+            background: white; /* تأكيد الخلفية البيضاء */
         }
 
         /* تنسيقات التقرير الداخلي */
@@ -59,8 +62,7 @@
         .report-box { border: 1px solid #ccc; padding: 10px; border-radius: 5px; min-width: 100px; text-align: center; flex: 1; }
         .report-box h3 { margin: 0; font-size: 12px; color: #555; }
         .report-box p { margin: 5px 0 0 0; font-size: 16px; font-weight: bold; }
-        .report-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 12px; direction: rtl; page-break-inside: auto; }
-        .report-table tr { page-break-inside: avoid; page-break-after: auto; }
+        .report-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 12px; direction: rtl; }
         .report-table th, .report-table td { border: 1px solid #ccc; padding: 8px; text-align: center; }
         .report-table th { background-color: #eee; font-weight: bold; }
 
@@ -81,6 +83,8 @@
         .success-msg { color: #2e7d32; display: none; background: #e8f5e9; padding: 8px; border-radius: 8px; margin-top: 10px; font-size: 0.85rem; }
         .view-section { display: none; } .view-section.active { display: block; animation: fadeIn 0.4s; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Loader z-index must be lower than report when printing */
         .loading { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:10000; display:none; justify-content:center; align-items:center; }
         
         #app-container { display: none; padding: 15px; max-width: 600px; margin: 0 auto; }
@@ -172,7 +176,7 @@
     
     <div id="legend-toast"></div>
 
-    <!-- Hidden Report Container -->
+    <!-- Hidden Report Container for PDF -->
     <div id="report-container"></div>
 
     <!-- Auth System -->
@@ -263,6 +267,7 @@
     </div>
 
     <!-- Modals -->
+    <!-- Export Selection Modal -->
     <div class="modal-overlay" id="exportModal">
         <div class="modal-content">
             <h3 style="text-align:center;">اختر نوع التقرير (PDF)</h3>
@@ -555,7 +560,7 @@
                 window.showLoader(true);
                 const pc = document.getElementById('report-container');
                 pc.innerHTML = '';
-                pc.classList.add('active-print'); // Ensure visibility
+                pc.classList.add('active-print'); 
                 
                 // 1. Gather Data
                 const yr = currentDate.getFullYear();
@@ -889,7 +894,7 @@
                      const d = new Date(k);
                      if(d.getFullYear()===yr) {
                          let h=0; 
-                         // Only count work hours for Week/Month/Year totals (exclude sick)
+                         // Only work hours count for week/month/year totals. Sick is excluded.
                          if(evt.type==='work'||(evt.type==='eid'&&evt.eidStatus==='work')) {
                              h=evt.hours;
                              tYear += h;
@@ -900,6 +905,7 @@
                              tYearWorkHours += h;
                          }
                          
+                         // Net hours balance calculation
                          if(evt.type==='work'||(evt.type==='eid'&&evt.eidStatus==='work')) net+=(evt.hours-8); else if(evt.type==='absent') net-=8;
                          
                          if(evt.type==='sick') {
