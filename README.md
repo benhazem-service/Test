@@ -6,8 +6,7 @@
     <title>المدير الذكي 2026</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-
+    
     <style>
         :root {
             --primary: #4361ee; --primary-dark: #3a0ca3;
@@ -29,31 +28,57 @@
         * { box-sizing: border-box; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
         body { font-family: 'Cairo', sans-serif; background-color: var(--bg); margin: 0; padding-bottom: 80px; color: var(--text); transition: background 0.3s, color 0.3s; }
 
-        /* --- حاوية التقرير (تم إصلاحها لضمان الطباعة) --- */
+        /* --- إعدادات الطباعة (مهمة جداً) --- */
+        @media print {
+            /* إخفاء كل شيء في الصفحة */
+            body * {
+                visibility: hidden;
+            }
+            /* إظهار حاوية التقرير ومحتوياتها فقط */
+            #report-container, #report-container * {
+                visibility: visible;
+            }
+            /* تنسيق الحاوية لتملأ الورقة */
+            #report-container {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                margin: 0;
+                padding: 0;
+                background: white;
+                color: black;
+                z-index: 99999999;
+                display: block !important;
+            }
+            /* إلغاء أي هوامش للمتصفح */
+            @page { margin: 1cm; size: auto; }
+            
+            /* إخفاء الأزرار أو العناصر غير المرغوبة داخل التقرير إن وجدت */
+            .no-print { display: none !important; }
+        }
+
+        /* --- حاوية التقرير (للعرض قبل الطباعة) --- */
         #report-container {
             position: fixed;
-            top: 0; 
-            left: 0;
+            top: 0; left: 0;
             width: 100%; 
-            height: 100vh; /* يغطي الشاشة بالكامل */
+            height: 100vh;
             background: #ffffff; 
             color: #000000;
             padding: 20px;
             font-family: 'Cairo', sans-serif;
-            
-            /* الوضع الافتراضي: مخفي خلف الشاشة */
             z-index: -9999;
             opacity: 0;
-            visibility: hidden; /* إضافة visibility لضمان عدم التداخل */
+            pointer-events: none;
             overflow-y: auto;
         }
 
-        /* عند التفعيل: يظهر في المقدمة */
+        /* عند التفعيل للتحضير */
         #report-container.active-print {
-            z-index: 999999; /* فوق كل العناصر بما فيها اللودر */
+            z-index: 999999;
             opacity: 1;
-            visibility: visible;
-            background: white; /* تأكيد الخلفية البيضاء */
+            background: white;
         }
 
         /* تنسيقات التقرير الداخلي */
@@ -83,8 +108,6 @@
         .success-msg { color: #2e7d32; display: none; background: #e8f5e9; padding: 8px; border-radius: 8px; margin-top: 10px; font-size: 0.85rem; }
         .view-section { display: none; } .view-section.active { display: block; animation: fadeIn 0.4s; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        
-        /* Loader z-index must be lower than report when printing */
         .loading { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:10000; display:none; justify-content:center; align-items:center; }
         
         #app-container { display: none; padding: 15px; max-width: 600px; margin: 0 auto; }
@@ -176,7 +199,7 @@
     
     <div id="legend-toast"></div>
 
-    <!-- Hidden Report Container for PDF -->
+    <!-- Hidden Report Container for Printing -->
     <div id="report-container"></div>
 
     <!-- Auth System -->
@@ -225,7 +248,7 @@
                 <button id="btn-nfc-scan" class="action-btn" onclick="window.app.startNFCScan()" style="display:none; color:var(--primary); font-weight:bold;">📡</button>
                 <button class="action-btn" onclick="window.app.openInbox()">🔔 <span id="msg-badge" class="badge-count">0</span></button>
                 <button class="action-btn" onclick="window.app.toggleTheme()">🌓</button>
-                <button class="action-btn" onclick="window.app.showExportOptions()" style="color:var(--work)">📥</button>
+                <button class="action-btn" onclick="window.app.showExportOptions()" style="color:var(--work)">🖨️</button>
                 <button class="action-btn" onclick="window.app.openSearchModal()">🔍</button>
                 <button class="action-btn" id="btn-settings" onclick="window.app.openSettings()">⚙️</button>
                 <button class="action-btn logout-btn" onclick="handleLogout()" style="color:#ef4444; background:rgba(239,68,68,0.1); border-color:rgba(239,68,68,0.2);">↪️</button>
@@ -270,10 +293,10 @@
     <!-- Export Selection Modal -->
     <div class="modal-overlay" id="exportModal">
         <div class="modal-content">
-            <h3 style="text-align:center;">اختر نوع التقرير (PDF)</h3>
+            <h3 style="text-align:center;">اختر نوع الطباعة</h3>
             <div style="display:flex; flex-direction:column; gap:10px; margin-top:20px;">
-                <button class="btn-main" onclick="window.app.generateReport('month')">📄 تحميل تقرير شهري</button>
-                <button class="btn-main btn-secondary" onclick="window.app.generateReport('year')">📑 تحميل تقرير سنوي</button>
+                <button class="btn-main" onclick="window.app.generateReport('month')">📄 طباعة تقرير شهري</button>
+                <button class="btn-main btn-secondary" onclick="window.app.generateReport('year')">📑 طباعة تقرير سنوي</button>
             </div>
             <button class="btn-close-modal" onclick="document.getElementById('exportModal').style.display='none'">إلغاء</button>
         </div>
@@ -560,7 +583,6 @@
                 window.showLoader(true);
                 const pc = document.getElementById('report-container');
                 pc.innerHTML = '';
-                pc.classList.add('active-print'); 
                 
                 // 1. Gather Data
                 const yr = currentDate.getFullYear();
@@ -568,19 +590,16 @@
                 const appName = window.appData.global.appName || 'نظام الحضور الذكي';
                 const userName = window.appData.personal.fullName || 'موظف';
                 let periodStr = '';
-                let fileName = '';
                 let eventsList = [];
 
                 if(type === 'month') {
                     periodStr = `${monthNames[mth]} ${yr}`;
-                    fileName = `تقرير_شهر_${mth+1}_${yr}.pdf`;
                     for(const [k, evt] of Object.entries(window.appData.events)) {
                         const d = new Date(k);
                         if(d.getFullYear() === yr && d.getMonth() === mth) eventsList.push({date:k, ...evt});
                     }
                 } else {
                     periodStr = `سنة ${yr}`;
-                    fileName = `تقرير_سنة_${yr}.pdf`;
                     for(const [k, evt] of Object.entries(window.appData.events)) {
                         const d = new Date(k);
                         if(d.getFullYear() === yr) eventsList.push({date:k, ...evt});
@@ -663,26 +682,20 @@
                 `;
 
                 pc.innerHTML = html;
+                pc.classList.add('active-print'); // Show before print
 
-                // 4. Generate PDF using html2pdf
-                const opt = {
-                    margin: 10,
-                    filename: fileName,
-                    image: { type: 'jpeg', quality: 0.98 },
-                    html2canvas: { scale: 2, useCORS: true, scrollY: 0 },
-                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-                };
-
-                // Add slight delay to ensure rendering
+                // Allow browser to render, then print
                 setTimeout(() => {
-                    html2pdf().set(opt).from(pc).save().then(() => {
+                    window.showLoader(false);
+                    window.print();
+                    
+                    // After print dialog closes (or user cancels)
+                    // Note: Browsers block execution until dialog closes
+                    // But to be safe, we leave it visible for a moment or hide on interaction
+                    // A simple approach is to hide it after a small delay
+                    setTimeout(() => {
                         pc.classList.remove('active-print');
-                        window.showLoader(false);
-                    }).catch(err => {
-                        console.error(err);
-                        pc.classList.remove('active-print');
-                        window.showLoader(false);
-                    });
+                    }, 500);
                 }, 500);
             },
 
@@ -1049,7 +1062,6 @@
             performSearch: () => { /* Same as before */ },
             openSettings: () => {
                 document.getElementById('s-join').value = window.appData.personal.joinDate||''; document.getElementById('s-name').value = window.appData.personal.fullName||'';
-                // Load NFC Settings
                 const nfc = window.appData.personal.nfc || {enabled:false, serial:''};
                 document.getElementById('s-nfc-toggle').checked = nfc.enabled;
                 document.getElementById('s-nfc-serial').value = nfc.serial;
@@ -1066,11 +1078,9 @@
                 if(n && s && e) {
                     if(!window.appData.global.presets) window.appData.global.presets = [];
                     window.appData.global.presets.push({label:n, start:s, end:e});
-                    // Clear inputs
                     document.getElementById('p-name').value = '';
                     document.getElementById('p-start').value = '';
                     document.getElementById('p-end').value = '';
-                    // Force Render immediately
                     window.app.renderSettingsLists();
                 } else {
                     alert("يرجى ملء جميع الحقول (الاسم، البداية، النهاية)");
