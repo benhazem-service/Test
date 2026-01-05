@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>المدير الذكي 2026</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- مكتبات خارجية -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
@@ -29,25 +30,40 @@
         * { box-sizing: border-box; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
         body { font-family: 'Cairo', sans-serif; background-color: var(--bg); margin: 0; padding-bottom: 80px; color: var(--text); transition: background 0.3s, color 0.3s; }
 
-        /* --- إصلاح مشكلة التقرير الفارغ --- */
+        /* --- حاوية التقرير (الحل الجذري للملف الفارغ) --- */
         #report-container {
-            display: none; /* مخفي افتراضياً */
-            position: fixed; 
-            top: 0; left: 0; 
-            width: 100%; height: 100%; 
-            background: white; 
-            color: black; 
-            padding: 20px; 
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: #ffffff; color: #000000;
+            padding: 20px;
             font-family: 'Cairo', sans-serif;
-            z-index: 99999; /* يظهر فوق كل شيء عند التفعيل */
+            /* مخفي خلف التطبيق */
+            z-index: -9999;
+            opacity: 0;
+            pointer-events: none;
             overflow-y: auto;
+            transform: translateX(-9999px); /* إبعاد تام */
         }
-        /* عند التفعيل من الجافاسكريبت */
-        #report-container.visible {
-            display: block;
+        /* كلاس التفعيل: يظهر للتصوير */
+        #report-container.active-print {
+            z-index: 99999;
+            opacity: 1;
+            transform: translateX(0);
+            background: white;
         }
 
-        /* Styles */
+        /* تنسيقات التقرير الداخلي */
+        .report-header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px; }
+        .report-summary { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; justify-content: center; direction: rtl; }
+        .report-box { border: 1px solid #ccc; padding: 10px; border-radius: 5px; min-width: 100px; text-align: center; flex: 1; }
+        .report-box h3 { margin: 0; font-size: 12px; color: #555; }
+        .report-box p { margin: 5px 0 0 0; font-size: 16px; font-weight: bold; }
+        .report-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 12px; direction: rtl; }
+        .report-table th, .report-table td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+        .report-table th { background-color: #eee; font-weight: bold; }
+
+        /* Auth Styles */
         #auth-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, var(--primary), #4cc9f0); z-index: 9999; display: flex; justify-content: center; align-items: center; flex-direction: column; }
         .auth-card { background: rgba(255,255,255,0.98); padding: 30px; border-radius: 24px; width: 90%; max-width: 380px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
         body.dark-mode .auth-card { background: #1e1e1e; color: #fff; }
@@ -147,15 +163,6 @@
         .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
         input:checked + .slider { background-color: var(--primary); }
         input:checked + .slider:before { transform: translateX(16px); }
-
-        /* Report Table Styles (Used for PDF generation) */
-        .report-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 12px; }
-        .report-table th, .report-table td { border: 1px solid #ccc; padding: 6px; text-align: right; }
-        .report-table th { background-color: #eee; font-weight: bold; }
-        .report-summary { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; }
-        .report-box { border: 1px solid #ccc; padding: 10px; border-radius: 5px; min-width: 100px; text-align: center; }
-        .report-box h3 { margin: 0; font-size: 10px; color: #555; }
-        .report-box p { margin: 5px 0 0 0; font-size: 14px; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -164,7 +171,7 @@
     
     <div id="legend-toast"></div>
 
-    <!-- Hidden Report Container for PDF -->
+    <!-- Hidden Report Container for PDF (Fixed) -->
     <div id="report-container"></div>
 
     <!-- Auth System -->
@@ -227,6 +234,7 @@
             <div class="stat-card" onclick="window.app.showDetails('leave')"><h4>رصيد العطلة</h4><div class="val" id="st-leave">0</div><div class="sub">تراكمي FIFO</div></div>
             <div class="stat-card" onclick="window.app.showDetails('week')"><h4>هذا الأسبوع</h4><div class="val" id="st-week">0</div></div>
             <div class="stat-card" onclick="window.app.showDetails('month')"><h4>هذا الشهر</h4><div class="val" id="st-month">0</div></div>
+            <!-- Updated Year Card -->
             <div class="stat-card full-width" onclick="window.app.showDetails('year')"><h4>المجموع السنوي</h4><div class="val" id="st-year">0</div></div>
         </div>
 
@@ -255,7 +263,6 @@
     </div>
 
     <!-- Modals -->
-    <!-- Export Selection Modal -->
     <div class="modal-overlay" id="exportModal">
         <div class="modal-content">
             <h3 style="text-align:center;">اختر نوع التقرير (PDF)</h3>
@@ -548,7 +555,7 @@
                 window.showLoader(true);
                 const pc = document.getElementById('report-container');
                 pc.innerHTML = '';
-                pc.classList.add('visible'); // Show container for html2pdf to see
+                pc.classList.add('active-print'); 
                 
                 // 1. Gather Data
                 const yr = currentDate.getFullYear();
@@ -561,14 +568,14 @@
 
                 if(type === 'month') {
                     periodStr = `${monthNames[mth]} ${yr}`;
-                    fileName = `report_month_${mth+1}_${yr}.pdf`;
+                    fileName = `تقرير_شهر_${mth+1}_${yr}.pdf`;
                     for(const [k, evt] of Object.entries(window.appData.events)) {
                         const d = new Date(k);
                         if(d.getFullYear() === yr && d.getMonth() === mth) eventsList.push({date:k, ...evt});
                     }
                 } else {
                     periodStr = `سنة ${yr}`;
-                    fileName = `report_year_${yr}.pdf`;
+                    fileName = `تقرير_سنة_${yr}.pdf`;
                     for(const [k, evt] of Object.entries(window.appData.events)) {
                         const d = new Date(k);
                         if(d.getFullYear() === yr) eventsList.push({date:k, ...evt});
@@ -593,7 +600,7 @@
 
                 // 3. Build HTML
                 let html = `
-                    <div style="text-align:center; border-bottom:2px solid #333; padding-bottom:10px; margin-bottom:20px;">
+                    <div class="report-header">
                         <h1 style="margin:0;">${appName}</h1>
                         <h3 style="margin:5px 0;">تقرير الحضور - ${periodStr}</h3>
                         <p>الموظف: ${userName}</p>
@@ -630,6 +637,7 @@
                         let timeInfo = '';
                         if(e.start && e.end) timeInfo = `${e.start} - ${e.end} (${e.hours}س)`;
                         else if(e.hours) timeInfo = `${e.hours}س`;
+                        else if(e.type === 'sick') timeInfo = '1 يوم';
                         
                         html += `
                             <tr>
@@ -660,10 +668,15 @@
                     jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
                 };
 
-                html2pdf().set(opt).from(pc).save().then(() => {
-                    pc.classList.remove('visible');
-                    window.showLoader(false);
-                });
+                setTimeout(() => {
+                    html2pdf().set(opt).from(pc).save().then(() => {
+                        pc.classList.remove('active-print');
+                        window.showLoader(false);
+                    }).catch(() => {
+                        pc.classList.remove('active-print');
+                        window.showLoader(false);
+                    });
+                }, 500);
             },
 
             renderChart: () => {
@@ -850,7 +863,7 @@
                 return { pools, deductions };
             },
             calcStats: () => {
-                let net=0, sat=0, leave=0, pending=0, tWeek=0, tMonth=0, tYear=0, tYearWorkHours=0, tSickDays=0, tYearWorkDays=0;
+                let net=0, sat=0, leave=0, pending=0, tWeek=0, tMonth=0, tYear=0, tYearWorkHours=0, tSickDays=0, tTotalDays=0;
                 let yr=currentDate.getFullYear(), mth=currentDate.getMonth(), today=new Date();
                 const weekStart=new Date(today); weekStart.setDate(today.getDate()-today.getDay()); weekStart.setHours(0,0,0,0);
                 const weekEnd=new Date(weekStart); weekEnd.setDate(weekStart.getDate()+6); weekEnd.setHours(23,59,59,999);
@@ -874,7 +887,7 @@
                      const d = new Date(k);
                      if(d.getFullYear()===yr) {
                          let h=0; 
-                         // Only count work hours for Week/Month/Year totals (exclude sick)
+                         // Only work hours count for week/month/year totals. Sick is excluded.
                          if(evt.type==='work'||(evt.type==='eid'&&evt.eidStatus==='work')) {
                              h=evt.hours;
                              tYear += h;
@@ -882,9 +895,10 @@
                              if(d>=weekStart&&d<=weekEnd) tWeek += h;
                              
                              // Stats for Annual Card
-                             tYearWorkHours += h;
+                             tYearWorkHours += h; // Sum of hours
                          }
                          
+                         // Net hours balance calculation
                          if(evt.type==='work'||(evt.type==='eid'&&evt.eidStatus==='work')) net+=(evt.hours-8); else if(evt.type==='absent') net-=8;
                          
                          if(evt.type==='sick') {
@@ -907,7 +921,10 @@
                 document.getElementById('st-leave').textContent = leave.toFixed(1); document.getElementById('st-sunday').textContent = pending;
                 document.getElementById('st-week').textContent = tWeek.toFixed(1); document.getElementById('st-month').textContent = tMonth.toFixed(1); 
                 
-                // Updated Annual Total Layout: Work | Sick | Total (Work Hours)
+                // Updated Annual Total Layout
+                // Total hours sum is just the work hours since sick is days
+                let totalSum = tYearWorkHours; // + (tSickDays * 0) since sick is excluded from hours total requested
+                
                 document.getElementById('st-year').innerHTML = `
                     <div style="display:flex; justify-content:space-around; align-items:center; width:100%;">
                         <div style="display:flex; flex-direction:column;">
@@ -922,7 +939,7 @@
                         <div style="width:1px; height:25px; background:#e0e0e0;"></div>
                         <div style="display:flex; flex-direction:column;">
                             <span style="font-size:0.7rem; color:#888;">مجموع</span>
-                            <span style="font-size:1.1rem; font-weight:bold; color:var(--text)">${tYearWorkHours.toFixed(0)}</span>
+                            <span style="font-size:1.1rem; font-weight:bold; color:var(--text)">${totalSum.toFixed(0)}</span>
                         </div>
                     </div>
                 `;
@@ -991,13 +1008,14 @@
                         }
                      }
                 } else if (cat === 'year') {
-                    // Modified Year Details (Work + Sick Only)
+                    // Specific detail view for Yearly Total
                     for(const [k, evt] of Object.entries(window.appData.events)) {
                         if(new Date(k).getFullYear() === yr) {
                             if(evt.type==='work' || (evt.type==='eid' && evt.eidStatus==='work')) {
                                 tempList.push({date:k, note:'عمل', val:evt.hours+'س', type:'pos'});
                             }
                             if(evt.type==='sick') {
+                                // Display as 'Day' but doesn't add to hours sum in main stat
                                 tempList.push({date:k, note:'مرض', val:'يوم', type:'neutral', style:'color:var(--sick)'});
                             }
                         }
@@ -1006,7 +1024,7 @@
                     for(const [k, evt] of Object.entries(window.appData.events)) {
                         if(new Date(k).getFullYear() === yr) {
                             let h = 0;
-                            // Only show work hours here, exclude sick
+                            // Only include work hours
                             if(evt.type==='work' || (evt.type==='eid' && evt.eidStatus==='work')) h = evt.hours;
                             
                             if(h>0) tempList.push({date:k, note:evt.type, val:h+'س', type:'pos'});
@@ -1027,16 +1045,13 @@
             performSearch: () => { /* Same as before */ },
             openSettings: () => {
                 document.getElementById('s-join').value = window.appData.personal.joinDate||''; document.getElementById('s-name').value = window.appData.personal.fullName||'';
-                // Load NFC Settings
                 const nfc = window.appData.personal.nfc || {enabled:false, serial:''};
                 document.getElementById('s-nfc-toggle').checked = nfc.enabled;
                 document.getElementById('s-nfc-serial').value = nfc.serial;
                 window.app.toggleNFCConfig();
-                
                 window.app.renderSettingsLists(); document.getElementById('settingsModal').style.display='flex';
             },
             
-            // --- FIX FOR ADMIN PRESETS BUTTON ---
             addPreset: () => {
                 const n = document.getElementById('p-name').value;
                 const s = document.getElementById('p-start').value;
@@ -1044,11 +1059,9 @@
                 if(n && s && e) {
                     if(!window.appData.global.presets) window.appData.global.presets = [];
                     window.appData.global.presets.push({label:n, start:s, end:e});
-                    // Clear inputs
                     document.getElementById('p-name').value = '';
                     document.getElementById('p-start').value = '';
                     document.getElementById('p-end').value = '';
-                    // Force Render immediately
                     window.app.renderSettingsLists();
                 } else {
                     alert("يرجى ملء جميع الحقول (الاسم، البداية، النهاية)");
@@ -1065,12 +1078,7 @@
                 window.appData.personal.joinDate = document.getElementById('s-join').value;
                 window.appData.personal.fullName = document.getElementById('s-name').value;
                 window.appData.global.appName = document.getElementById('p-app-name').value || window.appData.global.appName;
-                // Save NFC
-                window.appData.personal.nfc = {
-                    enabled: document.getElementById('s-nfc-toggle').checked,
-                    serial: document.getElementById('s-nfc-serial').value
-                };
-                
+                window.appData.personal.nfc = { enabled: document.getElementById('s-nfc-toggle').checked, serial: document.getElementById('s-nfc-serial').value };
                 window.saveData('personal_settings', window.appData.personal);
                 if(window.appData.role === 'admin') window.saveData('global_config', window.appData.global);
                 document.getElementById('settingsModal').style.display = 'none';
