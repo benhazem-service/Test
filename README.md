@@ -6,6 +6,7 @@
     <title>المدير الذكي 2026</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
     <style>
         :root {
@@ -28,7 +29,10 @@
         * { box-sizing: border-box; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
         body { font-family: 'Cairo', sans-serif; background-color: var(--bg); margin: 0; padding-bottom: 80px; color: var(--text); transition: background 0.3s, color 0.3s; }
 
-        /* Auth Styles */
+        /* Report Container */
+        #report-container { position: fixed; left: -9999px; top: 0; width: 210mm; min-height: 297mm; background: white; color: black; padding: 20px; font-family: 'Cairo', sans-serif; }
+
+        /* Styles */
         #auth-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, var(--primary), #4cc9f0); z-index: 9999; display: flex; justify-content: center; align-items: center; flex-direction: column; }
         .auth-card { background: rgba(255,255,255,0.98); padding: 30px; border-radius: 24px; width: 90%; max-width: 380px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
         body.dark-mode .auth-card { background: #1e1e1e; color: #fff; }
@@ -47,7 +51,6 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .loading { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:10000; display:none; justify-content:center; align-items:center; }
         
-        /* App Layout */
         #app-container { display: none; padding: 15px; max-width: 600px; margin: 0 auto; }
         .header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; background: var(--surface); padding: 15px; border-radius: var(--radius); box-shadow: 0 4px 20px rgba(0,0,0,0.05); margin-bottom: 20px; gap: 10px; }
         .header-info { display: flex; flex-direction: column; min-width: 120px; }
@@ -65,10 +68,8 @@
         .full-width { grid-column: span 2; }
         .txt-red { color: #f44336 !important; } .txt-green { color: #4caf50 !important; }
         
-        /* Chart Styles */
         .chart-box { background: var(--surface); padding: 15px; border-radius: var(--radius); box-shadow: 0 4px 20px rgba(0,0,0,0.05); margin-top: 20px; margin-bottom: 20px; height: 260px; position: relative; }
 
-        /* Calendar */
         .calendar-box { background: var(--surface); border-radius: var(--radius); padding: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
         .cal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
         .days-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
@@ -101,11 +102,10 @@
         #legend-toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: #333; color: white; padding: 8px 16px; border-radius: 20px; font-size: 0.85rem; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 3000; }
         .show-toast { opacity: 1 !important; }
 
-        /* Modals */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2000; display: none; justify-content: center; align-items: flex-end; backdrop-filter: blur(2px); }
-        #confirmModal, #msgPopup, #nfcPopup { z-index: 99999 !important; align-items: center; } 
+        #confirmModal, #msgPopup, #nfcPopup, #exportModal { z-index: 99999 !important; align-items: center; } 
         .modal-content { background: var(--surface); width: 100%; max-width: 500px; border-radius: 24px 24px 0 0; padding: 25px; animation: slideUp 0.3s; max-height: 85vh; overflow-y: auto; color: var(--text); }
-        #confirmModal .modal-content, #msgPopup .modal-content, #nfcPopup .modal-content { border-radius: 24px; max-width: 320px; text-align: center; }
+        #confirmModal .modal-content, #msgPopup .modal-content, #nfcPopup .modal-content, #exportModal .modal-content { border-radius: 24px; max-width: 320px; text-align: center; }
         @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
         
         .modal-btns { display: flex; gap: 10px; margin-top: 20px; }
@@ -123,7 +123,6 @@
         .details-header { font-weight: bold; margin: 15px 0 10px; color: var(--primary); font-size: 0.95rem; border-bottom: 2px solid var(--border); padding-bottom: 5px; }
         .msg-popup-text { font-size: 1rem; color: var(--text); margin: 15px 0; background: var(--bg); padding: 15px; border-radius: 10px; border-right: 4px solid var(--primary); text-align: right; }
 
-        /* NFC Specific Styles */
         .nfc-scanning { animation: pulse 1.5s infinite; border-color: var(--primary); color: var(--primary); }
         @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(67, 97, 238, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(67, 97, 238, 0); } 100% { box-shadow: 0 0 0 0 rgba(67, 97, 238, 0); } }
         .switch-container { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; background: var(--bg); padding: 10px; border-radius: 10px; }
@@ -134,6 +133,14 @@
         input:checked + .slider { background-color: var(--primary); }
         input:checked + .slider:before { transform: translateX(16px); }
 
+        /* Report Table Styles (Used for PDF generation) */
+        .report-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 12px; }
+        .report-table th, .report-table td { border: 1px solid #ccc; padding: 6px; text-align: right; }
+        .report-table th { background-color: #eee; font-weight: bold; }
+        .report-summary { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; }
+        .report-box { border: 1px solid #ccc; padding: 10px; border-radius: 5px; min-width: 100px; text-align: center; }
+        .report-box h3 { margin: 0; font-size: 10px; color: #555; }
+        .report-box p { margin: 5px 0 0 0; font-size: 14px; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -141,6 +148,9 @@
     <div id="loader" class="loading"><div style="width:40px;height:40px;border:4px solid #ddd;border-top-color:var(--primary);border-radius:50%;animation:spin 1s infinite"></div></div>
     
     <div id="legend-toast"></div>
+
+    <!-- Hidden Report Container for PDF -->
+    <div id="report-container"></div>
 
     <!-- Auth System -->
     <div id="auth-overlay">
@@ -185,12 +195,10 @@
                 <div class="user-sub-title">مرحباً، <span id="u-name">...</span></div>
             </div>
             <div class="header-actions">
-                <!-- NFC Trigger Button (Visible only if enabled) -->
                 <button id="btn-nfc-scan" class="action-btn" onclick="window.app.startNFCScan()" style="display:none; color:var(--primary); font-weight:bold;">📡</button>
-                
                 <button class="action-btn" onclick="window.app.openInbox()">🔔 <span id="msg-badge" class="badge-count">0</span></button>
                 <button class="action-btn" onclick="window.app.toggleTheme()">🌓</button>
-                <button class="action-btn" onclick="window.app.exportCSV()" style="color:var(--work)">📥</button>
+                <button class="action-btn" onclick="window.app.showExportOptions()" style="color:var(--work)">📥</button>
                 <button class="action-btn" onclick="window.app.openSearchModal()">🔍</button>
                 <button class="action-btn" id="btn-settings" onclick="window.app.openSettings()">⚙️</button>
                 <button class="action-btn logout-btn" onclick="handleLogout()" style="color:#ef4444; background:rgba(239,68,68,0.1); border-color:rgba(239,68,68,0.2);">↪️</button>
@@ -204,7 +212,7 @@
             <div class="stat-card" onclick="window.app.showDetails('leave')"><h4>رصيد العطلة</h4><div class="val" id="st-leave">0</div><div class="sub">تراكمي FIFO</div></div>
             <div class="stat-card" onclick="window.app.showDetails('week')"><h4>هذا الأسبوع</h4><div class="val" id="st-week">0</div></div>
             <div class="stat-card" onclick="window.app.showDetails('month')"><h4>هذا الشهر</h4><div class="val" id="st-month">0</div></div>
-            <div class="stat-card full-width" onclick="window.app.showDetails('year')"><h4>مجموع السنة</h4><div class="val" id="st-year">0</div></div>
+            <div class="stat-card full-width" onclick="window.app.showDetails('year')"><h4>المجموع السنوي</h4><div class="val" id="st-year">0</div></div>
         </div>
 
         <div class="calendar-box">
@@ -226,13 +234,24 @@
             </div>
         </div>
 
-        <!-- المبيان تم نقله هنا أسفل التقويم -->
         <div class="chart-box">
             <canvas id="myChart"></canvas>
         </div>
     </div>
 
     <!-- Modals -->
+    <!-- Export Selection Modal -->
+    <div class="modal-overlay" id="exportModal">
+        <div class="modal-content">
+            <h3 style="text-align:center;">اختر نوع التقرير (PDF)</h3>
+            <div style="display:flex; flex-direction:column; gap:10px; margin-top:20px;">
+                <button class="btn-main" onclick="window.app.generateReport('month')">📄 تحميل تقرير شهري</button>
+                <button class="btn-main btn-secondary" onclick="window.app.generateReport('year')">📑 تحميل تقرير سنوي</button>
+            </div>
+            <button class="btn-close-modal" onclick="document.getElementById('exportModal').style.display='none'">إلغاء</button>
+        </div>
+    </div>
+
     <div class="modal-overlay" id="confirmModal">
         <div class="modal-content">
             <h3 style="color:#f44336; margin-bottom:10px;">⚠️ تأكيد الحذف</h3>
@@ -328,7 +347,7 @@
                     <button class="btn-main" style="background:#ff9800; margin-top:5px;" onclick="window.app.sendBroadcast()">إرسال</button>
                 </div>
                 <div style="background:rgba(67, 97, 238, 0.1); padding:10px; border-radius:10px;">
-                    <label class="form-label" style="color:var(--primary);">التوقيتات:</label>
+                    <label class="form-label" style="color:var(--primary);">إدارة التوقيتات:</label>
                     <div style="display:flex; gap:5px;"><input type="text" id="p-name" class="app-input" placeholder="اسم"><input type="time" id="p-start" class="app-input"><input type="time" id="p-end" class="app-input"></div>
                     <button class="btn-main" onclick="window.app.addPreset()" style="font-size:0.8rem; padding:8px;">+ إضافة</button>
                     <div id="presets-list" class="preset-list" style="margin-top:10px; max-height:100px; overflow-y:auto;"></div>
@@ -396,7 +415,22 @@
             const e = document.getElementById('reg-email').value, p = document.getElementById('reg-pass').value, c = document.getElementById('reg-confirm').value;
             if(!e || !p || !c || p!==c || p.length<6) return window.showError('reg-error', 'خطأ في البيانات');
             window.showLoader(true);
-            try { const snap = await getDocs(collection(db, "users")); const role = snap.empty ? 'admin' : 'user'; const cred = await createUserWithEmailAndPassword(auth, e, p); await sendEmailVerification(cred.user); await setDoc(doc(db, "users", cred.user.uid), { email: e, role: role }); await setDoc(doc(db, "settings", cred.user.uid), { joinDate: '', fullName: '', adjustments: [], dismissedMsgs: [], deletedMsgs: [], nfc: {enabled:false, serial:''} }); if(role === 'admin') await setDoc(doc(db, "config", "general"), { presets: [{label:'عادي', start:'08:00', end:'16:00'}] }); await signOut(auth); document.getElementById('reg-success').textContent = "تم التسجيل!"; document.getElementById('reg-success').style.display = 'block'; } catch(err) { window.showError('reg-error', 'خطأ في التسجيل'); } finally { window.showLoader(false); }
+            try { 
+                const snap = await getDocs(collection(db, "users")); 
+                const role = snap.empty ? 'admin' : 'user'; 
+                const cred = await createUserWithEmailAndPassword(auth, e, p); 
+                await sendEmailVerification(cred.user); 
+                await setDoc(doc(db, "users", cred.user.uid), { email: e, role: role }); 
+                await setDoc(doc(db, "settings", cred.user.uid), { joinDate: '', fullName: '', adjustments: [], dismissedMsgs: [], deletedMsgs: [], nfc: {enabled:false, serial:''} }); 
+                if(role === 'admin') await setDoc(doc(db, "config", "general"), { 
+                    presets: [
+                        {label:'صباح', start:'06:00', end:'14:00'},
+                        {label:'مساء', start:'14:00', end:'22:00'},
+                        {label:'ليل', start:'22:00', end:'06:00'}
+                    ] 
+                }); 
+                await signOut(auth); document.getElementById('reg-success').textContent = "تم التسجيل!"; document.getElementById('reg-success').style.display = 'block'; 
+            } catch(err) { window.showError('reg-error', 'خطأ في التسجيل'); } finally { window.showLoader(false); }
         };
         window.handleReset = async () => { const e = document.getElementById('reset-email').value; if(!e) return; try { await sendPasswordResetEmail(auth, e); document.getElementById('reset-msg').textContent = "تم الإرسال"; document.getElementById('reset-msg').style.display = 'block'; } catch(err) {} };
         window.handleLogout = async () => { await signOut(auth); window.location.reload(); };
@@ -443,7 +477,7 @@
         let deleteType = null;
         let pendingMsgId = null;
         window.myChartInstance = null;
-        let nfcReader = null; // Store NFC instance
+        let nfcReader = null; 
 
         window.appData = { role: 'user', events: {}, personal: {}, global: {}, messages: [] };
 
@@ -456,104 +490,163 @@
                 const isEnabled = document.getElementById('s-nfc-toggle').checked;
                 document.getElementById('nfc-config-area').classList.toggle('hidden', !isEnabled);
             },
-
-            // Helper to handle NFC reading (Setup or Check-in)
             handleNFCReading: async (mode) => {
                 if (!('NDEFReader' in window)) return alert("المتصفح أو الجهاز لا يدعم NFC. يرجى استخدام Chrome على Android.");
-                
                 try {
-                    const ndef = new NDEFReader();
-                    await ndef.scan();
-                    
+                    const ndef = new NDEFReader(); await ndef.scan();
                     window.app.showLegendToast(mode === 'setup' ? "قرّب الشريحة لحفظها..." : "قرّب الشريحة لتسجيل الحضور...");
                     if(mode !== 'setup') document.getElementById('btn-nfc-scan').classList.add('nfc-scanning');
-
                     ndef.onreading = event => {
                         const serial = event.serialNumber;
-                        if (!serial) {
-                             window.app.showLegendToast("لم يتم العثور على سيريال (Serial Number) لهذه الشريحة.");
-                             return;
-                        }
-
-                        if (mode === 'setup') {
-                            document.getElementById('s-nfc-serial').value = serial;
-                            window.app.showLegendToast("تم قراءة السيريال بنجاح!");
-                        } else if (mode === 'checkin') {
+                        if (!serial) return window.app.showLegendToast("لم يتم العثور على سيريال");
+                        if (mode === 'setup') { document.getElementById('s-nfc-serial').value = serial; window.app.showLegendToast("تم قراءة السيريال بنجاح!"); } 
+                        else if (mode === 'checkin') {
                             const savedSerial = window.appData.personal.nfc.serial;
-                            if (serial.toLowerCase() === savedSerial.toLowerCase()) {
-                                document.getElementById('btn-nfc-scan').classList.remove('nfc-scanning');
-                                document.getElementById('nfcPopup').style.display = 'flex';
-                            } else {
-                                window.app.showLegendToast("خطأ: الشريحة غير مطابقة!");
-                            }
+                            if (serial.toLowerCase() === savedSerial.toLowerCase()) { document.getElementById('btn-nfc-scan').classList.remove('nfc-scanning'); document.getElementById('nfcPopup').style.display = 'flex'; } 
+                            else { window.app.showLegendToast("خطأ: الشريحة غير مطابقة!"); }
                         }
                     };
-
-                    ndef.onreadingerror = () => {
-                        window.app.showLegendToast("حدث خطأ أثناء القراءة.");
-                        document.getElementById('btn-nfc-scan').classList.remove('nfc-scanning');
-                    };
-
-                } catch (error) {
-                    alert("تعذر بدء مسح NFC: " + error);
-                    document.getElementById('btn-nfc-scan').classList.remove('nfc-scanning');
-                }
+                    ndef.onreadingerror = () => { window.app.showLegendToast("حدث خطأ أثناء القراءة."); document.getElementById('btn-nfc-scan').classList.remove('nfc-scanning'); };
+                } catch (error) { alert("تعذر بدء مسح NFC: " + error); document.getElementById('btn-nfc-scan').classList.remove('nfc-scanning'); }
             },
-
             scanTagForSetup: () => window.app.handleNFCReading('setup'),
-            
             startNFCScan: () => window.app.handleNFCReading('checkin'),
-
             confirmNFCAttendance: () => {
                 const today = new Date();
                 const key = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
-                
-                // Check if already exists
-                if(window.appData.events[key]) {
-                    alert("يوجد تسجيل مسبق لهذا اليوم.");
-                    document.getElementById('nfcPopup').style.display = 'none';
-                    return;
-                }
-
-                // Get default times from presets or hardcoded
+                if(window.appData.events[key]) { alert("يوجد تسجيل مسبق لهذا اليوم."); document.getElementById('nfcPopup').style.display = 'none'; return; }
                 let start = '08:00', end = '16:00';
-                if(window.appData.global.presets && window.appData.global.presets.length > 0) {
-                    start = window.appData.global.presets[0].start;
-                    end = window.appData.global.presets[0].end;
-                }
-                
-                // Calculate hours
-                const [h1, m1] = start.split(':').map(Number);
-                const [h2, m2] = end.split(':').map(Number);
-                let diff = (h2*60+m2) - (h1*60+m1);
-                if(diff < 0) diff += 24*60;
-                
-                // Save
-                window.appData.events[key] = {
-                    type: 'work',
-                    start: start,
-                    end: end,
-                    hours: parseFloat((diff/60).toFixed(2)),
-                    note: 'تسجيل تلقائي عبر NFC 📡'
-                };
+                if(window.appData.global.presets && window.appData.global.presets.length > 0) { start = window.appData.global.presets[0].start; end = window.appData.global.presets[0].end; }
+                const [h1, m1] = start.split(':').map(Number), [h2, m2] = end.split(':').map(Number);
+                let diff = (h2*60+m2) - (h1*60+m1); if(diff < 0) diff += 24*60;
+                window.appData.events[key] = { type: 'work', start: start, end: end, hours: parseFloat((diff/60).toFixed(2)), note: 'تسجيل تلقائي عبر NFC 📡' };
                 window.saveData('events', window.appData.events);
-                
-                document.getElementById('nfcPopup').style.display = 'none';
-                window.app.showLegendToast("تم تسجيل الحضور بنجاح! ✅");
-                window.app.renderCalendar();
+                document.getElementById('nfcPopup').style.display = 'none'; window.app.showLegendToast("تم تسجيل الحضور بنجاح! ✅"); window.app.renderCalendar();
             },
             // --- END NFC LOGIC ---
 
-            exportCSV: () => {
-                if(Object.keys(window.appData.events).length === 0) return alert("لا توجد بيانات");
-                let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
-                csvContent += "التاريخ,النوع,القيمة,ملاحظات\n";
-                Object.entries(window.appData.events).sort().forEach(([date, val]) => {
-                    let typeAr = { work:'عمل', holiday:'عطلة', sick:'مرض', absent:'غياب', recup:'تعويض', eid:'عيد' }[val.type] || val.type;
-                    let hours = val.hours ? val.hours + 'س' : 'يوم';
-                    csvContent += `${date},${typeAr},${hours},${(val.note||'').replace(/,/g,' ')}\n`;
+            // --- EXPORT & PRINT LOGIC ---
+            showExportOptions: () => { document.getElementById('exportModal').style.display = 'flex'; },
+            
+            generateReport: (type) => {
+                document.getElementById('exportModal').style.display = 'none';
+                window.showLoader(true);
+                const pc = document.getElementById('report-container');
+                pc.innerHTML = '';
+                
+                // 1. Gather Data
+                const yr = currentDate.getFullYear();
+                const mth = currentDate.getMonth();
+                const appName = window.appData.global.appName || 'نظام الحضور الذكي';
+                const userName = window.appData.personal.fullName || 'موظف';
+                let periodStr = '';
+                let fileName = '';
+                let eventsList = [];
+
+                if(type === 'month') {
+                    periodStr = `${monthNames[mth]} ${yr}`;
+                    fileName = `report_month_${mth+1}_${yr}.pdf`;
+                    for(const [k, evt] of Object.entries(window.appData.events)) {
+                        const d = new Date(k);
+                        if(d.getFullYear() === yr && d.getMonth() === mth) eventsList.push({date:k, ...evt});
+                    }
+                } else {
+                    periodStr = `سنة ${yr}`;
+                    fileName = `report_year_${yr}.pdf`;
+                    for(const [k, evt] of Object.entries(window.appData.events)) {
+                        const d = new Date(k);
+                        if(d.getFullYear() === yr) eventsList.push({date:k, ...evt});
+                    }
+                }
+                eventsList.sort((a,b) => new Date(a.date) - new Date(b.date));
+
+                // 2. Stats
+                let net=0, sat=0, workedDays=0, absentDays=0;
+                const breakdown = window.app.getLeaveBreakdown();
+                const totalLeave = breakdown.pools.reduce((sum, pool) => sum + pool.remaining, 0);
+
+                eventsList.forEach(e => {
+                    if(e.type === 'work' || (e.type === 'eid' && e.eidStatus === 'work')) {
+                        workedDays++;
+                        net += (e.hours - 8);
+                        const d = new Date(e.date);
+                        if(d.getDay() === 6) sat += 4; 
+                    }
+                    if(e.type === 'absent') { absentDays++; net -= 8; }
                 });
-                const link = document.createElement("a"); link.href = encodeURI(csvContent); link.download = `report_${new Date().toISOString().slice(0,10)}.csv`; document.body.appendChild(link); link.click(); document.body.removeChild(link);
+
+                // 3. Build HTML
+                let html = `
+                    <div style="text-align:center; border-bottom:2px solid #333; padding-bottom:10px; margin-bottom:20px;">
+                        <h1 style="margin:0;">${appName}</h1>
+                        <h3 style="margin:5px 0;">تقرير الحضور - ${periodStr}</h3>
+                        <p>الموظف: ${userName}</p>
+                    </div>
+
+                    <div class="report-summary">
+                        <div class="report-box"><h3>رصيد العطلة الحالي</h3><p>${totalLeave}</p></div>
+                        <div class="report-box"><h3>صافي الساعات (الفترة)</h3><p>${net.toFixed(1)}</p></div>
+                        <div class="report-box"><h3>رصيد السبت (الفترة)</h3><p>${sat}</p></div>
+                        <div class="report-box"><h3>أيام العمل</h3><p>${workedDays}</p></div>
+                        <div class="report-box"><h3>أيام الغياب</h3><p>${absentDays}</p></div>
+                    </div>
+
+                    <table class="report-table">
+                        <thead>
+                            <tr>
+                                <th>التاريخ</th>
+                                <th>اليوم</th>
+                                <th>الحالة</th>
+                                <th>التوقيت / الساعات</th>
+                                <th>ملاحظات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                if(eventsList.length === 0) {
+                    html += `<tr><td colspan="5" style="text-align:center;">لا توجد سجلات لهذه الفترة</td></tr>`;
+                } else {
+                    eventsList.forEach(e => {
+                        const dObj = new Date(e.date);
+                        const dayName = dayNames[dObj.getDay()===0?6:dObj.getDay()-1];
+                        let typeAr = { work:'عمل', holiday:'عطلة', sick:'مرض', absent:'غياب', recup:'تعويض', eid:'عيد' }[e.type] || e.type;
+                        let timeInfo = '';
+                        if(e.start && e.end) timeInfo = `${e.start} - ${e.end} (${e.hours}س)`;
+                        else if(e.hours) timeInfo = `${e.hours}س`;
+                        
+                        html += `
+                            <tr>
+                                <td>${e.date}</td>
+                                <td>${dayName}</td>
+                                <td>${typeAr}</td>
+                                <td style="direction:ltr; text-align:right;">${timeInfo}</td>
+                                <td>${e.note || e.eidName || ''}</td>
+                            </tr>
+                        `;
+                    });
+                }
+
+                html += `</tbody></table>
+                    <div style="margin-top:30px; font-size:10px; color:#777; text-align:center;">
+                        تم استخراج هذا التقرير بتاريخ ${new Date().toLocaleString('ar-EG')}
+                    </div>
+                `;
+
+                pc.innerHTML = html;
+
+                // 4. Generate PDF using html2pdf
+                const opt = {
+                    margin: 10,
+                    filename: fileName,
+                    image: { type: 'jpeg', quality: 0.98 },
+                    html2canvas: { scale: 2, useCORS: true },
+                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                };
+
+                html2pdf().set(opt).from(pc).save().then(() => {
+                    window.showLoader(false);
+                });
             },
 
             renderChart: () => {
@@ -616,8 +709,13 @@
                     let cls = '', natCls = isNat ? 'nat-holiday' : '', noteInd = (evt && evt.note) ? '<div class="note-dot"></div>' : '';
                     if(evt) cls = `st-${evt.type}`;
                     const dObj = new Date(y, m, i), now = new Date(); now.setHours(0,0,0,0);
-                    const classes = `day-cell ${dObj.getTime()===now.getTime()?'today':''} ${dObj.getDay()===0||dObj.getDay()===6?'weekend':''} ${natCls} ${cls} ${dObj>now&&!isNat?'future':''}`;
-                    const action = (dObj<=now || isNat) ? `onclick="window.app.openDay('${key}')"` : '';
+                    // Update: Allow 1 day into future for visual style
+                    const tomorrow = new Date(now); tomorrow.setDate(tomorrow.getDate() + 1);
+                    const isFuture = dObj > tomorrow && !isNat;
+                    
+                    const classes = `day-cell ${dObj.getTime()===now.getTime()?'today':''} ${dObj.getDay()===0||dObj.getDay()===6?'weekend':''} ${natCls} ${cls} ${isFuture?'future':''}`;
+                    // Update: Click action allows today + tomorrow
+                    const action = (!isFuture) ? `onclick="window.app.openDay('${key}')"` : '';
                     grid.innerHTML += `<div class="${classes}" ${action}><span>${i}</span>${noteInd}</div>`;
                 }
                 window.app.calcStats();
@@ -625,7 +723,11 @@
             navMonth: (s) => { currentDate.setMonth(currentDate.getMonth() + s); window.app.renderCalendar(); },
             openDay: (key) => {
                 const natName = nationalHolidays[`${new Date(key).getMonth()+1}-${new Date(key).getDate()}`];
-                if(new Date(key) > new Date().setHours(0,0,0,0) && !natName) return;
+                // Update: Logic to allow today + 1 day (tomorrow)
+                const today = new Date(); today.setHours(0,0,0,0);
+                const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1);
+                if(new Date(key).setHours(0,0,0,0) > tomorrow.getTime() && !natName) return;
+
                 selectedKey = key; document.getElementById('modal-title').textContent = key; document.getElementById('dayModal').style.display = 'flex';
                 let evt = window.appData.events[key] || (natName ? {type:'eid',eidStatus:'rest',eidName:natName} : {type:'work',start:'',end:'',eidStatus:'work'});
                 document.getElementById('d-type').value = evt.type;
@@ -650,6 +752,8 @@
             applyPreset: () => { const idx = document.getElementById('d-preset').value; if(idx!=='manual') { const p=window.appData.global.presets[idx]; document.getElementById('d-start').value=p.start; document.getElementById('d-end').value=p.end; } },
             saveDay: () => {
                 const type = document.getElementById('d-type').value, note = document.getElementById('d-note').value;
+                let targetKey = selectedKey;
+
                 if(type === 'holiday') {
                     let count = parseInt(document.getElementById('d-count').value), loopD = new Date(selectedKey), added = 0;
                     while(added < count) { if(loopD.getDay()!==6&&loopD.getDay()!==0) { const k = `${loopD.getFullYear()}-${String(loopD.getMonth()+1).padStart(2,'0')}-${String(loopD.getDate()).padStart(2,'0')}`; window.appData.events[k] = {type:'holiday',hours:0,note:note}; added++; } loopD.setDate(loopD.getDate()+1); }
@@ -657,11 +761,24 @@
                     let data = {type, note};
                     if(type==='work' || (type==='eid'&&document.getElementById('d-eid-status').value==='work')) {
                         const s=document.getElementById('d-start').value, e=document.getElementById('d-end').value;
-                        if(s&&e) { data.start=s; data.end=e; const [h1,m1]=s.split(':').map(Number),[h2,m2]=e.split(':').map(Number); let diff=(h2*60+m2)-(h1*60+m1); if(s>e) diff+=24*60; data.hours=parseFloat((diff/60).toFixed(2)); }
+                        if(s&&e) { 
+                            data.start=s; data.end=e; 
+                            const [h1,m1]=s.split(':').map(Number),[h2,m2]=e.split(':').map(Number); 
+                            let diff=(h2*60+m2)-(h1*60+m1); 
+                            // Night Shift Logic (Shift to next day)
+                            if(s > e) { 
+                                diff += 24*60;
+                                const dObj = new Date(selectedKey);
+                                dObj.setDate(dObj.getDate() + 1);
+                                targetKey = `${dObj.getFullYear()}-${String(dObj.getMonth()+1).padStart(2,'0')}-${String(dObj.getDate()).padStart(2,'0')}`;
+                            } 
+                            data.hours=parseFloat((diff/60).toFixed(2)); 
+                        }
                         if(type==='eid') { data.eidStatus='work'; data.eidName=document.getElementById('d-eid-name').value; }
                     } else if(type==='eid') { data.eidStatus='rest'; data.eidName=document.getElementById('d-eid-name').value; }
                     else if(type==='recup') data.recupTarget=document.getElementById('d-recup-target').value;
-                    window.appData.events[selectedKey] = data;
+                    
+                    window.appData.events[targetKey] = data;
                 }
                 window.saveData('events', window.appData.events); document.getElementById('dayModal').style.display='none';
             },
@@ -716,7 +833,8 @@
                 return { pools, deductions };
             },
             calcStats: () => {
-                let net=0, sat=0, leave=0, pending=0, tWeek=0, tMonth=0, tYear=0, yr=currentDate.getFullYear(), mth=currentDate.getMonth(), today=new Date();
+                let net=0, sat=0, leave=0, pending=0, tWeek=0, tMonth=0, tYear=0, tYearWorkHours=0, tSickDays=0, tYearWorkDays=0;
+                let yr=currentDate.getFullYear(), mth=currentDate.getMonth(), today=new Date();
                 const weekStart=new Date(today); weekStart.setDate(today.getDate()-today.getDay()); weekStart.setHours(0,0,0,0);
                 const weekEnd=new Date(weekStart); weekEnd.setDate(weekStart.getDate()+6); weekEnd.setHours(23,59,59,999);
                 
@@ -738,23 +856,63 @@
                 Object.entries(window.appData.events).forEach(([k, evt]) => {
                      const d = new Date(k);
                      if(d.getFullYear()===yr) {
-                         let h=0; if(evt.type==='work'||(evt.type==='eid'&&evt.eidStatus==='work')) h=evt.hours; else if(['holiday','sick'].includes(evt.type)||(evt.type==='eid'&&evt.eidStatus==='rest')) h=8;
-                         tYear+=h; if(d.getMonth()===mth) tMonth+=h; if(d>=weekStart&&d<=weekEnd) tWeek+=h;
+                         let h=0; 
+                         // Only count work hours for Week/Month/Year totals (exclude sick)
+                         if(evt.type==='work'||(evt.type==='eid'&&evt.eidStatus==='work')) {
+                             h=evt.hours;
+                             tYear += h;
+                             if(d.getMonth()===mth) tMonth += h;
+                             if(d>=weekStart&&d<=weekEnd) tWeek += h;
+                             
+                             // Stats for Annual Card
+                             tYearWorkHours += h;
+                         }
+                         
                          if(evt.type==='work'||(evt.type==='eid'&&evt.eidStatus==='work')) net+=(evt.hours-8); else if(evt.type==='absent') net-=8;
+                         
+                         if(evt.type==='sick') {
+                             tSickDays++;
+                         }
                      }
                 });
-                // Recup Pending
+                
+                // Sunday Logic
                 const used = Object.values(window.appData.events).filter(e=>e.type==='recup').map(e=>e.recupTarget);
-                Object.entries(window.appData.events).forEach(([k,e]) => { const d=new Date(k); if((d.getDay()===0&&e.type==='work')||(e.type==='eid'&&e.eidStatus==='work')) { if(!used.includes(k)) pending++; } });
+                Object.entries(window.appData.events).forEach(([k,e]) => { 
+                    const d=new Date(k);
+                    const isNat = nationalHolidays[`${d.getMonth()+1}-${d.getDate()}`];
+                    const isEid = e.type === 'eid';
+                    if(d.getDay()===0 && !isNat && !isEid) { if(e.type==='work') { if(!used.includes(k)) pending++; } }
+                });
 
                 document.getElementById('st-net').innerHTML = `<span class="${net>=0?'txt-green':'txt-red'}">${net.toFixed(1)}</span>`;
                 document.getElementById('st-sat').innerHTML = `<span class="${sat>=0?'txt-green':'txt-red'}">${sat}</span>`;
                 document.getElementById('st-leave').textContent = leave.toFixed(1); document.getElementById('st-sunday').textContent = pending;
-                document.getElementById('st-week').textContent = tWeek.toFixed(1); document.getElementById('st-month').textContent = tMonth.toFixed(1); document.getElementById('st-year').textContent = tYear.toFixed(1);
+                document.getElementById('st-week').textContent = tWeek.toFixed(1); document.getElementById('st-month').textContent = tMonth.toFixed(1); 
+                
+                // Updated Annual Total Layout: Work | Sick | Total (Work Hours)
+                document.getElementById('st-year').innerHTML = `
+                    <div style="display:flex; justify-content:space-around; align-items:center; width:100%;">
+                        <div style="display:flex; flex-direction:column;">
+                            <span style="font-size:0.7rem; color:#888;">عمل</span>
+                            <span style="font-size:1.1rem; font-weight:bold; color:var(--work)">${tYearWorkHours.toFixed(0)}</span>
+                        </div>
+                        <div style="width:1px; height:25px; background:#e0e0e0;"></div>
+                        <div style="display:flex; flex-direction:column;">
+                            <span style="font-size:0.7rem; color:#888;">مرض</span>
+                            <span style="font-size:1.1rem; font-weight:bold; color:var(--sick)">${tSickDays}</span>
+                        </div>
+                        <div style="width:1px; height:25px; background:#e0e0e0;"></div>
+                        <div style="display:flex; flex-direction:column;">
+                            <span style="font-size:0.7rem; color:#888;">مجموع</span>
+                            <span style="font-size:1.1rem; font-weight:bold; color:var(--text)">${tYearWorkHours.toFixed(0)}</span>
+                        </div>
+                    </div>
+                `;
+                
                 window.app.renderChart();
             },
             
-            // --- Detailed Show Logic Restored ---
             showDetails: (cat) => {
                 document.getElementById('search-inputs').style.display = 'none';
                 document.getElementById('search-title').textContent = 'التفاصيل';
@@ -807,25 +965,44 @@
                      const used = Object.values(window.appData.events).filter(e => e.type === 'recup').map(e => e.recupTarget);
                      for(const [k, evt] of Object.entries(window.appData.events)) {
                         const d = new Date(k);
-                        if((d.getDay()===0 && evt.type==='work') || (evt.type==='eid' && evt.eidStatus==='work')) {
+                        // Filter Sunday logic in Details view too
+                        const isNat = nationalHolidays[`${d.getMonth()+1}-${d.getDate()}`];
+                        const isEid = evt.type === 'eid';
+
+                        if((d.getDay()===0 && !isNat && !isEid && evt.type==='work') || (evt.type==='eid' && evt.eidStatus==='work')) {
                             const isComp = used.includes(k);
                             tempList.push({ date: k, note: evt.eidName || 'عمل يوم أحد', val: isComp ? 'تم التعويض' : 'مستحق', type: isComp ? 'neutral' : 'pos' });
                         }
                      }
-                } else if (['week', 'month', 'year'].includes(cat)) {
+                } else if (cat === 'year') {
+                    // Modified Year Details (Work + Sick Only)
+                    for(const [k, evt] of Object.entries(window.appData.events)) {
+                        if(new Date(k).getFullYear() === yr) {
+                            if(evt.type==='work' || (evt.type==='eid' && evt.eidStatus==='work')) {
+                                tempList.push({date:k, note:'عمل', val:evt.hours+'س', type:'pos'});
+                            }
+                            if(evt.type==='sick') {
+                                tempList.push({date:k, note:'مرض', val:'يوم', type:'neutral', style:'color:var(--sick)'});
+                            }
+                        }
+                    }
+                } else if (['week', 'month'].includes(cat)) {
                     for(const [k, evt] of Object.entries(window.appData.events)) {
                         if(new Date(k).getFullYear() === yr) {
                             let h = 0;
+                            // Only show work hours here, exclude sick
                             if(evt.type==='work' || (evt.type==='eid' && evt.eidStatus==='work')) h = evt.hours;
-                            else if(['holiday','sick'].includes(evt.type)) h = 8;
+                            
                             if(h>0) tempList.push({date:k, note:evt.type, val:h+'س', type:'pos'});
                         }
                     }
                 }
+                
                 tempList.sort((a,b) => new Date(b.date) - new Date(a.date));
                 if(tempList.length === 0) list.innerHTML = '<div style="text-align:center; padding:10px;">لا توجد بيانات</div>';
                 tempList.forEach(item => {
-                    list.innerHTML += `<div class="detail-item ${item.type}" onclick="window.app.openDay('${item.date}')"><span>${item.date} <small>(${item.note})</small></span><span class="d-val ${item.type}">${item.val}</span></div>`;
+                    let customStyle = item.style ? `style="${item.style}"` : '';
+                    list.innerHTML += `<div class="detail-item ${item.type}" onclick="window.app.openDay('${item.date}')"><span>${item.date} <small>(${item.note})</small></span><span class="d-val ${item.type}" ${customStyle}>${item.val}</span></div>`;
                 });
                 document.getElementById('searchModal').style.display = 'flex';
             },
@@ -842,10 +1019,30 @@
                 
                 window.app.renderSettingsLists(); document.getElementById('settingsModal').style.display='flex';
             },
-            addPreset: () => { /* Same */ window.app.renderSettingsLists(); }, delPreset: (i) => { window.appData.global.presets.splice(i, 1); window.app.renderSettingsLists(); },
+            
+            // --- FIX FOR ADMIN PRESETS BUTTON ---
+            addPreset: () => {
+                const n = document.getElementById('p-name').value;
+                const s = document.getElementById('p-start').value;
+                const e = document.getElementById('p-end').value;
+                if(n && s && e) {
+                    if(!window.appData.global.presets) window.appData.global.presets = [];
+                    window.appData.global.presets.push({label:n, start:s, end:e});
+                    // Clear inputs
+                    document.getElementById('p-name').value = '';
+                    document.getElementById('p-start').value = '';
+                    document.getElementById('p-end').value = '';
+                    // Force Render immediately
+                    window.app.renderSettingsLists();
+                } else {
+                    alert("يرجى ملء جميع الحقول (الاسم، البداية، النهاية)");
+                }
+            },
+            
+            delPreset: (i) => { window.appData.global.presets.splice(i, 1); window.app.renderSettingsLists(); },
             addAdj: () => { /* Same */ window.app.renderSettingsLists(); }, delAdj: (i) => { window.appData.personal.adjustments.splice(i, 1); window.app.renderSettingsLists(); },
             renderSettingsLists: () => {
-                const pl = document.getElementById('presets-list'); pl.innerHTML = ''; window.appData.global.presets.forEach((p,i)=>pl.innerHTML+=`<div class="preset-item"><span>${p.label}</span><span class="del-icon" onclick="window.app.delPreset(${i})">X</span></div>`);
+                const pl = document.getElementById('presets-list'); pl.innerHTML = ''; window.appData.global.presets.forEach((p,i)=>pl.innerHTML+=`<div class="preset-item"><span>${p.label} (${p.start}-${p.end})</span> <span class="del-icon" onclick="window.app.delPreset(${i})">X</span></div>`);
                 const al = document.getElementById('adj-list'); al.innerHTML = ''; window.appData.personal.adjustments.forEach((a,i)=>al.innerHTML+=`<div class="preset-item"><span>+${a.amount}</span><span class="del-icon" onclick="window.app.delAdj(${i})">X</span></div>`);
             },
             saveSettings: () => {
