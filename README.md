@@ -6,16 +6,18 @@
     <title>المدير الذكي 2026</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
     
     <style>
         :root {
-            --primary: #4361ee; --primary-dark: #3a0ca3;
+            --primary: #4361ee; 
+            --primary-dark: #3a0ca3;
             --bg: #f8f9fa; --surface: #ffffff;
             --text: #2b2d42; --text-light: #8d99ae;
             --border: #e0e0e0;
             --work: #4caf50; --holiday: #ffc107; --sick: #ff9800;
             --absent: #f44336; --eid: #9c27b0; --recup: #00bcd4;
-            --paid: #009688; /* New Paid Color */
+            --paid: #009688;
             --ramadan: #673ab7;
             --radius: 16px;
         }
@@ -24,7 +26,7 @@
             --bg: #121212; --surface: #1e1e1e;
             --text: #e0e0e0; --text-light: #b0b0b0;
             --border: #333;
-            --primary: #5c7cfa;
+            /* Primary color adapts via JS, but falls back to a lighter blue if not set */
         }
 
         * { box-sizing: border-box; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
@@ -47,14 +49,15 @@
         .report-table th, .report-table td { border: 1px solid #ccc; padding: 8px; text-align: center; }
         .report-table th { background-color: #eee; font-weight: bold; }
 
-        #auth-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, var(--primary), #4cc9f0); z-index: 9999; display: flex; justify-content: center; align-items: center; flex-direction: column; }
+        #auth-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, var(--primary), #4cc9f0); z-index: 9999; display: flex; justify-content: center; align-items: center; flex-direction: column; transition: background 0.3s; }
         .auth-card { background: rgba(255,255,255,0.98); padding: 30px; border-radius: 24px; width: 90%; max-width: 380px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
         body.dark-mode .auth-card { background: #1e1e1e; color: #fff; }
+        .auth-header h2 { color: var(--primary); margin: 0 0 10px 0; }
         .input-group { position: relative; margin-bottom: 15px; }
         .app-input { width: 100%; padding: 12px; border: 2px solid var(--border); border-radius: 12px; font-family: inherit; font-size: 1rem; outline: none; transition: 0.3s; background: var(--surface); color: var(--text); }
         .app-input:focus { border-color: var(--primary); }
         .toggle-password { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #888; font-size: 1.2rem; }
-        .btn-main { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .btn-main { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; margin-top: 10px; transition: background 0.3s; }
         .btn-secondary { background: transparent; color: var(--primary); border: 2px solid var(--primary); margin-top: 10px; }
         .btn-close-modal { width: 100%; padding: 12px; margin-top: 15px; background: var(--bg); color: var(--text-light); border: 1px solid var(--border); border-radius: 12px; font-weight: bold; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px; }
         .error-msg { color: #d32f2f; display: none; background: #ffebee; padding: 8px; border-radius: 8px; margin-top: 10px; font-size: 0.85rem; }
@@ -100,7 +103,7 @@
         .day-cell.st-absent { background-color: var(--absent) !important; color: white !important; }
         .day-cell.st-eid { background-color: var(--eid) !important; color: white !important; }
         .day-cell.st-recup { background-color: var(--recup) !important; color: white !important; }
-        .day-cell.st-paid { background-color: var(--paid) !important; color: white !important; } /* Paid Style */
+        .day-cell.st-paid { background-color: var(--paid) !important; color: white !important; }
         
         .day-cell[class*="st-"] span { color: white !important; }
         .day-cell.st-holiday span { color: #333 !important; }
@@ -345,7 +348,7 @@
         </div>
     </div>
 
-    <!-- Settings (with NFC & Ramadan) -->
+    <!-- Settings (with NFC & Ramadan & Color Picker) -->
     <div class="modal-overlay" id="settingsModal">
         <div class="modal-content">
             <h3 style="text-align:center;">الإعدادات</h3>
@@ -355,11 +358,18 @@
                      <label class="form-label" style="color:var(--primary); font-weight:bold;">اسم البرنامج:</label>
                      <input type="text" id="p-app-name" class="app-input">
                 </div>
+                
+                <div style="background:rgba(255, 152, 0, 0.1); padding:10px; border-radius:10px; margin-bottom:10px; border:1px solid #ff9800;">
+                    <label class="form-label" style="color:#ef6c00; font-weight:bold;">👥 طلبات الاشتراك:</label>
+                    <div id="pending-users-list" style="margin-top:5px; max-height:150px; overflow-y:auto;"></div>
+                </div>
+
                 <div style="background:rgba(255, 152, 0, 0.1); padding:10px; border-radius:10px; margin-bottom:10px;">
                     <label class="form-label" style="color:#ef6c00;">✉️ إرسال رسالة:</label>
                     <textarea id="admin-msg-text" class="app-input" rows="2"></textarea>
                     <button class="btn-main" style="background:#ff9800; margin-top:5px;" onclick="window.app.sendBroadcast()">إرسال</button>
                 </div>
+                
                 <div style="background:rgba(67, 97, 238, 0.1); padding:10px; border-radius:10px; margin-bottom:10px;">
                     <label class="form-label" style="color:var(--primary);">إدارة التوقيتات العادية:</label>
                     <div style="display:flex; gap:5px;"><input type="text" id="p-name" class="app-input" placeholder="اسم"><input type="time" id="p-start" class="app-input"><input type="time" id="p-end" class="app-input"></div>
@@ -367,7 +377,6 @@
                     <div id="presets-list" class="preset-list" style="margin-top:10px; max-height:100px; overflow-y:auto;"></div>
                 </div>
 
-                <!-- RAMADAN SECTION -->
                 <div style="background:rgba(103, 58, 183, 0.1); padding:10px; border-radius:10px; border:1px solid var(--ramadan);">
                     <label class="form-label" style="color:var(--ramadan); font-weight:bold;">🌙 إعدادات رمضان:</label>
                     <div style="display:flex; gap:5px; margin-bottom:10px;">
@@ -394,7 +403,17 @@
             <div style="background:rgba(76, 175, 80, 0.1); padding:10px; border-radius:10px; margin-bottom:15px;">
                 <label class="form-label">الاسم الكامل:</label><input type="text" id="s-name" class="app-input">
                 <label class="form-label">تاريخ التحاقي:</label><input type="date" id="s-join" class="app-input">
+                
+                <!-- Color Picker Feature -->
+                <div style="margin-top:15px; border-top:1px dashed #ccc; padding-top:10px;">
+                    <label class="form-label">لون التطبيق المفضل:</label>
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <input type="color" id="s-theme-color" value="#4361ee" style="height:40px; border:none; background:none; cursor:pointer;">
+                        <span style="font-size:0.8rem; color:var(--text-light)">اضغط لتغيير اللون</span>
+                    </div>
+                </div>
             </div>
+
             <div style="background:rgba(255, 152, 0, 0.1); padding:10px; border-radius:10px; margin-bottom:15px;">
                 <label class="form-label">رصيد عطلة إضافي:</label>
                 <div style="display:flex; gap:5px;"><input type="number" id="adj-days" class="app-input" placeholder="أيام"><input type="text" id="adj-note" class="app-input" placeholder="سبب"></div>
@@ -409,7 +428,7 @@
     <!-- Firebase SDK -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, doc, setDoc, getDoc, collection, getDocs, onSnapshot, updateDoc, deleteField, addDoc, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, getDocs, onSnapshot, updateDoc, deleteField, addDoc, serverTimestamp, query, orderBy, where, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail, sendEmailVerification, setPersistence, browserLocalPersistence, browserSessionPersistence } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
         const firebaseConfig = { apiKey: "AIzaSyDhpORuBt8k6YWDLUgRrnqfC8lSS97LexQ", authDomain: "sbota-37391.firebaseapp.com", projectId: "sbota-37391", storageBucket: "sbota-37391.firebasestorage.app", messagingSenderId: "1049902061223", appId: "1:1049902061223:web:68e7c10c349025ca7ead82", measurementId: "G-3B4ESSJWJ9" };
@@ -427,7 +446,33 @@
             const e = document.getElementById('login-email').value, p = document.getElementById('login-pass').value;
             if(!e || !p) return window.showError('login-error', 'يرجى ملء البيانات');
             window.showLoader(true);
-            try { await setPersistence(auth, document.getElementById('remember-me').checked ? browserLocalPersistence : browserSessionPersistence); const cred = await signInWithEmailAndPassword(auth, e, p); if(!cred.user.emailVerified) { await signOut(auth); window.showError('login-error', 'يرجى تفعيل البريد الإلكتروني أولاً'); window.showLoader(false); } } catch(error) { window.showLoader(false); window.showError('login-error', "بيانات خاطئة"); }
+            try { 
+                await setPersistence(auth, document.getElementById('remember-me').checked ? browserLocalPersistence : browserSessionPersistence); 
+                const cred = await signInWithEmailAndPassword(auth, e, p); 
+                
+                const uDoc = await getDoc(doc(db, 'users', cred.user.uid));
+                if(uDoc.exists()) {
+                    const userData = uDoc.data();
+                    if(userData.status === 'pending') {
+                        await signOut(auth);
+                        window.showError('login-error', 'الحساب قيد المراجعة. يرجى انتظار تفعيل الأدمن.');
+                        window.showLoader(false);
+                        return;
+                    }
+                    if(userData.status === 'rejected') {
+                        await signOut(auth);
+                        window.showError('login-error', 'تم رفض طلبك. يرجى التواصل مع الإدارة.');
+                        window.showLoader(false);
+                        return;
+                    }
+                }
+
+                if(!cred.user.emailVerified) { 
+                    await signOut(auth); window.showError('login-error', 'يرجى تفعيل البريد الإلكتروني أولاً'); window.showLoader(false); 
+                } 
+            } catch(error) { 
+                window.showLoader(false); window.showError('login-error', "بيانات خاطئة"); 
+            }
         };
 
         window.handleSignup = async () => {
@@ -437,16 +482,28 @@
             try { 
                 const snap = await getDocs(collection(db, "users")); 
                 const role = snap.empty ? 'admin' : 'user'; 
+                const status = (role === 'admin') ? 'active' : 'pending';
+
                 const cred = await createUserWithEmailAndPassword(auth, e, p); 
                 await sendEmailVerification(cred.user); 
-                await setDoc(doc(db, "users", cred.user.uid), { email: e, role: role }); 
-                await setDoc(doc(db, "settings", cred.user.uid), { joinDate: '', fullName: '', adjustments: [], dismissedMsgs: [], deletedMsgs: [], nfc: {enabled:false, serial:''} }); 
+                
+                await setDoc(doc(db, "users", cred.user.uid), { email: e, role: role, status: status }); 
+                await setDoc(doc(db, "settings", cred.user.uid), { joinDate: '', fullName: '', adjustments: [], dismissedMsgs: [], deletedMsgs: [], nfc: {enabled:false, serial:''}, themeColor: '#4361ee' }); 
+                
                 if(role === 'admin') await setDoc(doc(db, "config", "general"), { 
                     presets: [{label:'صباح', start:'06:00', end:'14:00'}, {label:'مساء', start:'14:00', end:'22:00'}],
                     ramadanPresets: [{label:'صباح رمضان', start:'08:00', end:'15:00'}],
                     ramadanStart: '', ramadanDays: 0
                 }); 
-                await signOut(auth); document.getElementById('reg-success').textContent = "تم التسجيل!"; document.getElementById('reg-success').style.display = 'block'; 
+                
+                await signOut(auth); 
+                
+                if(status === 'pending') {
+                    document.getElementById('reg-success').textContent = "تم إنشاء الحساب. يرجى انتظار تفعيل الأدمن."; 
+                } else {
+                    document.getElementById('reg-success').textContent = "تم التسجيل! يمكنك الدخول الآن.";
+                }
+                document.getElementById('reg-success').style.display = 'block'; 
             } catch(err) { window.showError('reg-error', 'خطأ في التسجيل'); } finally { window.showLoader(false); }
         };
         window.handleReset = async () => { const e = document.getElementById('reset-email').value; if(!e) return; try { await sendPasswordResetEmail(auth, e); document.getElementById('reset-msg').textContent = "تم الإرسال"; document.getElementById('reset-msg').style.display = 'block'; } catch(err) {} };
@@ -456,28 +513,75 @@
         window.fbDeleteDay = async (dateKey) => { const u = auth.currentUser; if(!u) return; try { await updateDoc(doc(db, 'attendance', u.uid), { [`events.${dateKey}`]: deleteField() }); } catch(e) {} };
         window.sendAdminMessage = async (text) => { const u = auth.currentUser; if(!u) return; try { await addDoc(collection(db, "notifications"), { content: text, createdAt: serverTimestamp(), sender: u.uid }); alert("تم"); } catch(e) {} };
 
-        onAuthStateChanged(auth, async (user) => {
-            if(user && user.emailVerified) {
-                document.getElementById('auth-overlay').style.display = 'none'; document.getElementById('app-container').style.display = 'block';
-                document.getElementById('u-name').textContent = user.email.split('@')[0];
-                window.app.initTheme(); window.showLoader(true);
-                const uDoc = await getDoc(doc(db, 'users', user.uid));
-                if(uDoc.exists()) { window.appData.role = uDoc.data().role; if(window.appData.role === 'admin') document.getElementById('admin-section').style.display = 'block'; }
-                onSnapshot(doc(db, "attendance", user.uid), (doc) => { if(doc.exists()) window.appData.events = doc.data().events || {}; window.app.renderCalendar(); window.app.checkAutoFill(); });
-                onSnapshot(doc(db, "settings", user.uid), (doc) => { 
-                    if(doc.exists()) window.appData.personal = doc.data() || {};
-                    if(!window.appData.personal.nfc) window.appData.personal.nfc = {enabled: false, serial: ''};
-                    if(!window.appData.personal.dismissedMsgs) window.appData.personal.dismissedMsgs = [];
-                    if(!window.appData.personal.deletedMsgs) window.appData.personal.deletedMsgs = [];
-                    document.getElementById('u-name').textContent = window.appData.personal.fullName || user.email.split('@')[0];
-                    document.getElementById('btn-nfc-scan').style.display = window.appData.personal.nfc.enabled ? 'flex' : 'none';
-                    window.app.calcStats(); window.app.checkMessages();
+        window.approveUser = async (uid) => { try { await updateDoc(doc(db, 'users', uid), { status: 'active' }); alert("تم تفعيل المستخدم ✅"); window.app.openSettings(); } catch(e) { alert("خطأ"); } };
+        window.rejectUser = async (uid) => { if(confirm("هل أنت متأكد من رفض هذا المستخدم؟ سيتم حظره.")) { try { await updateDoc(doc(db, 'users', uid), { status: 'rejected' }); alert("تم رفض المستخدم ❌"); window.app.openSettings(); } catch(e) { alert("خطأ"); } } };
+
+        window.fetchPendingUsers = async () => {
+            const list = document.getElementById('pending-users-list');
+            if(!list) return;
+            list.innerHTML = '<div style="text-align:center;">جاري التحميل...</div>';
+            try {
+                const q = query(collection(db, "users"), where("status", "==", "pending"));
+                const querySnapshot = await getDocs(q);
+                list.innerHTML = '';
+                if(querySnapshot.empty) {
+                    list.innerHTML = '<div style="text-align:center; color:#999; font-size:0.8rem;">لا توجد طلبات جديدة</div>';
+                    return;
+                }
+                querySnapshot.forEach((doc) => {
+                    const u = doc.data();
+                    list.innerHTML += `<div style="display:flex; justify-content:space-between; align-items:center; background:white; padding:8px; border-radius:8px; margin-bottom:5px; border:1px solid #eee;"><span style="font-size:0.85rem; font-weight:bold;">${u.email}</span><div style="display:flex; gap:5px;"><button onclick="window.approveUser('${doc.id}')" style="background:#e8f5e9; color:#2e7d32; border:none; padding:4px 8px; border-radius:6px; cursor:pointer;">✅</button><button onclick="window.rejectUser('${doc.id}')" style="background:#ffebee; color:#c62828; border:none; padding:4px 8px; border-radius:6px; cursor:pointer;">❌</button></div></div>`;
                 });
-                onSnapshot(doc(db, "config", "general"), (doc) => { if(doc.exists()) { window.appData.global = doc.data() || {}; if(window.appData.global.appName) { document.title = window.appData.global.appName; document.getElementById('header-title').textContent = window.appData.global.appName; } } });
-                const q = query(collection(db, "notifications"), orderBy("createdAt", "desc"));
-                onSnapshot(q, (snapshot) => { let msgs = []; snapshot.forEach((doc) => msgs.push({ id: doc.id, ...doc.data() })); window.appData.messages = msgs; window.app.checkMessages(); });
-                window.showLoader(false);
-            } else { if(user) await signOut(auth); document.getElementById('auth-overlay').style.display = 'flex'; document.getElementById('app-container').style.display = 'none'; window.showLoader(false); }
+            } catch(e) { list.innerHTML = 'خطأ في التحميل'; }
+        };
+
+        onAuthStateChanged(auth, async (user) => {
+            if(user) {
+                const uDoc = await getDoc(doc(db, 'users', user.uid));
+                if(uDoc.exists()) {
+                    const data = uDoc.data();
+                    if(data.status !== 'active') {
+                        if(data.status === 'pending' || data.status === 'rejected') {
+                            await signOut(auth);
+                            document.getElementById('auth-overlay').style.display = 'flex';
+                            return;
+                        }
+                    }
+                    window.appData.role = data.role;
+                    if(window.appData.role === 'admin') {
+                        document.getElementById('admin-section').style.display = 'block';
+                    }
+                }
+
+                if(user.emailVerified) {
+                    document.getElementById('auth-overlay').style.display = 'none'; document.getElementById('app-container').style.display = 'block';
+                    document.getElementById('u-name').textContent = user.email.split('@')[0];
+                    window.app.initTheme(); window.showLoader(true);
+                    
+                    onSnapshot(doc(db, "attendance", user.uid), (doc) => { if(doc.exists()) window.appData.events = doc.data().events || {}; window.app.renderCalendar(); window.app.checkAutoFill(); });
+                    onSnapshot(doc(db, "settings", user.uid), (doc) => { 
+                        if(doc.exists()) window.appData.personal = doc.data() || {};
+                        if(!window.appData.personal.nfc) window.appData.personal.nfc = {enabled: false, serial: ''};
+                        if(!window.appData.personal.dismissedMsgs) window.appData.personal.dismissedMsgs = [];
+                        if(!window.appData.personal.deletedMsgs) window.appData.personal.deletedMsgs = [];
+                        
+                        document.getElementById('u-name').textContent = window.appData.personal.fullName || user.email.split('@')[0];
+                        document.getElementById('btn-nfc-scan').style.display = window.appData.personal.nfc.enabled ? 'flex' : 'none';
+                        
+                        if(window.appData.personal.themeColor) {
+                            window.app.applyColor(window.appData.personal.themeColor);
+                        }
+
+                        window.app.calcStats(); window.app.checkMessages();
+                    });
+                    onSnapshot(doc(db, "config", "general"), (doc) => { if(doc.exists()) { window.appData.global = doc.data() || {}; if(window.appData.global.appName) { document.title = window.appData.global.appName; document.getElementById('header-title').textContent = window.appData.global.appName; } } });
+                    const q = query(collection(db, "notifications"), orderBy("createdAt", "desc"));
+                    onSnapshot(q, (snapshot) => { let msgs = []; snapshot.forEach((doc) => msgs.push({ id: doc.id, ...doc.data() })); window.appData.messages = msgs; window.app.checkMessages(); });
+                    window.showLoader(false);
+                } else { if(user) await signOut(auth); document.getElementById('auth-overlay').style.display = 'flex'; document.getElementById('app-container').style.display = 'none'; window.showLoader(false); }
+            } else {
+                document.getElementById('auth-overlay').style.display = 'flex'; document.getElementById('app-container').style.display = 'none'; window.showLoader(false);
+            }
         });
     </script>
 
@@ -495,8 +599,49 @@
         window.appData = { role: 'user', events: {}, personal: {}, global: {}, messages: [] };
 
         window.app = {
-            initTheme: () => { if(localStorage.getItem('theme') === 'dark') document.body.classList.add('dark-mode'); },
-            toggleTheme: () => { document.body.classList.toggle('dark-mode'); localStorage.setItem('theme', document.body.classList.contains('dark-mode') ? 'dark' : 'light'); window.app.renderChart(); },
+            initTheme: () => { 
+                const saved = localStorage.getItem('theme');
+                if (saved === 'dark') {
+                    document.body.classList.add('dark-mode');
+                } else if (!saved && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                    document.body.classList.add('dark-mode');
+                }
+                
+                window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+                    if (!localStorage.getItem('theme')) { 
+                        if (e.matches) document.body.classList.add('dark-mode');
+                        else document.body.classList.remove('dark-mode');
+                    }
+                });
+            },
+            toggleTheme: () => { 
+                document.body.classList.toggle('dark-mode'); 
+                localStorage.setItem('theme', document.body.classList.contains('dark-mode') ? 'dark' : 'light'); 
+                window.app.renderChart(); 
+            },
+            
+            applyColor: (color) => {
+                if(!color) return;
+                document.documentElement.style.setProperty('--primary', color);
+                
+                // Simple darkening for hover logic approximation
+                // Note: For true darkening we need RGB math, but this sets the main vibe
+                // We'll let primary-dark stay specific or match primary for now to avoid complexity in this snippet
+                // Or we can try to approximate a darker shade string if it's hex
+                if(color.startsWith('#') && color.length === 7) {
+                    // Quick darken algo
+                    let col = parseInt(color.slice(1), 16);
+                    let amt = -20;
+                    let r = (col >> 16) + amt;
+                    let g = (col >> 8 & 0x00FF) + amt;
+                    let b = (col & 0x0000FF) + amt;
+                    let newColor = "#" + (0x1000000 + (r<255?r<1?0:r:255)*0x10000 + (g<255?g<1?0:g:255)*0x100 + (b<255?b<1?0:b:255)).toString(16).slice(1);
+                    document.documentElement.style.setProperty('--primary-dark', newColor);
+                }
+                
+                const picker = document.getElementById('s-theme-color');
+                if(picker) picker.value = color;
+            },
 
             isRamadan: (dateKey) => {
                 const g = window.appData.global;
@@ -592,14 +737,28 @@
 
             renderChart: () => {
                 const ctx = document.getElementById('myChart'); if(!ctx) return;
-                let counts = { work:0, holiday:0, sick:0, absent:0, eid:0 };
+                let counts = { work:0, holiday:0, sick:0, absent:0, eid:0, paid:0 };
                 Object.values(window.appData.events).forEach(e => { if(counts[e.type]!==undefined) counts[e.type]++; });
                 const isDark = document.body.classList.contains('dark-mode');
                 if(window.myChartInstance) window.myChartInstance.destroy();
                 window.myChartInstance = new Chart(ctx, {
                     type: 'doughnut',
-                    data: { labels: ['عمل', 'عطلة', 'مرض', 'غياب', 'عيد'], datasets: [{ data: Object.values(counts), backgroundColor: ['#4caf50', '#ffc107', '#ff9800', '#f44336', '#9c27b0'], borderWidth: 0 }] },
-                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { color: isDark?'#e0e0e0':'#2b2d42', font:{family:'Cairo'} } } } }
+                    data: { 
+                        labels: ['عمل', 'عطلة', 'مرض', 'غياب', 'عيد', 'يوم مدفوع'], 
+                        datasets: [{ 
+                            data: [counts.work, counts.holiday, counts.sick, counts.absent, counts.eid, counts.paid], 
+                            backgroundColor: ['#4caf50', '#ffc107', '#ff9800', '#f44336', '#9c27b0', '#009688'], 
+                            borderWidth: 0 
+                        }] 
+                    },
+                    options: { 
+                        responsive: true, maintainAspectRatio: false, 
+                        plugins: { 
+                            datalabels: { color: '#fff', font: { weight: 'bold' }, formatter: (v) => v > 0 ? v : '' },
+                            legend: { position: 'right', labels: { color: isDark?'#e0e0e0':'#2b2d42', font:{family:'Cairo'} } } 
+                        } 
+                    },
+                    plugins: [ChartDataLabels]
                 });
             },
 
@@ -1005,7 +1164,14 @@
                     document.getElementById('p-app-name').value = g.appName || '';
                     document.getElementById('p-ramadan-start').value = g.ramadanStart || '';
                     document.getElementById('p-ramadan-days').value = g.ramadanDays || '';
+                    window.fetchPendingUsers();
                 }
+                
+                // Color Picker
+                if(window.appData.personal.themeColor) {
+                    document.getElementById('s-theme-color').value = window.appData.personal.themeColor;
+                }
+                
                 window.app.renderSettingsLists(); document.getElementById('settingsModal').style.display='flex';
             },
             
@@ -1057,6 +1223,9 @@
                 window.appData.personal.joinDate = document.getElementById('s-join').value;
                 window.appData.personal.fullName = document.getElementById('s-name').value;
                 window.appData.personal.nfc = { enabled: document.getElementById('s-nfc-toggle').checked, serial: document.getElementById('s-nfc-serial').value };
+                window.appData.personal.themeColor = document.getElementById('s-theme-color').value;
+                
+                window.app.applyColor(window.appData.personal.themeColor);
                 window.saveData('personal_settings', window.appData.personal);
                 
                 if(window.appData.role === 'admin') {
