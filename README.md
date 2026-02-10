@@ -1,10 +1,12 @@
+html
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>المدير الذكي 2026</title>
+    <title>المدير الذكي</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
     
@@ -26,7 +28,7 @@
             --bg: #121212; --surface: #1e1e1e;
             --text: #e0e0e0; --text-light: #b0b0b0;
             --border: #333;
-            /* Primary color adapts via JS, but falls back to a lighter blue if not set */
+            --primary: #5c7cfa;
         }
 
         * { box-sizing: border-box; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
@@ -85,11 +87,11 @@
         
         .chart-box { background: var(--surface); padding: 15px; border-radius: var(--radius); box-shadow: 0 4px 20px rgba(0,0,0,0.05); margin-top: 20px; margin-bottom: 20px; height: 260px; position: relative; }
 
-        .calendar-box { background: var(--surface); border-radius: var(--radius); padding: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
+        .calendar-box { background: var(--surface); border-radius: var(--radius); padding: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); touch-action: pan-y; /* Allow vertical scroll, handle horizontal swipe in JS */ }
         .cal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
         .days-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
         .day-name { font-size: 0.75rem; color: var(--text-light); text-align: center; font-weight: bold; }
-        .day-cell { aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding-top: 5px; border-radius: 10px; background: var(--bg); cursor: pointer; position: relative; border: 1px solid transparent; }
+        .day-cell { aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding-top: 5px; border-radius: 10px; background: var(--bg); cursor: pointer; position: relative; border: 1px solid transparent; user-select: none; }
         .day-cell span { font-weight: bold; font-size: 0.9rem; color: var(--text); z-index: 2; position: absolute; top: 4px; right: 6px; line-height: 1; }
         .day-cell.today { border-color: var(--primary); background: rgba(67, 97, 238, 0.1) !important; }
         .day-cell.weekend { background-color: rgba(200,200,255,0.15); border: 1px dashed var(--border); }
@@ -111,8 +113,20 @@
         .day-cell.nat-holiday span { color: #880e4f !important; }
         body.dark-mode .day-cell.nat-holiday { background-color: #4a1c2d !important; color: #fce4ec !important; }
         
-        .day-cell.is-ramadan { border: 2px solid var(--ramadan); }
-        .ramadan-icon { position: absolute; bottom: 4px; left: 4px; font-size: 0.7rem; }
+        .day-cell.is-ramadan { 
+            border: 2px solid var(--ramadan) !important;
+            background-color: rgba(103, 58, 183, 0.05);
+            position: relative;
+            overflow: hidden;
+        }
+        .day-cell.is-ramadan::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; width: 0; height: 0; 
+            border-top: 16px solid var(--ramadan);
+            border-right: 16px solid transparent;
+            z-index: 1;
+        }
 
         .legend-container { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; margin-top: 20px; padding: 10px; background: var(--bg); border-radius: var(--radius); }
         .legend-dot { width: 20px; height: 20px; border-radius: 50%; cursor: pointer; border: 2px solid var(--surface); box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
@@ -218,12 +232,12 @@
 
         <div class="stats-grid">
             <div class="stat-card" onclick="window.app.showDetails('net')"><h4>رصيد الساعات</h4><div class="val" id="st-net">0</div><div class="sub">ميزان (+/- 8س)</div></div>
-            <div class="stat-card" onclick="window.app.showDetails('sat')"><h4>رصيد السبت</h4><div class="val" id="st-sat">0</div><div class="sub">عمل (+4) / آخر (-4)</div></div>
-            <div class="stat-card" onclick="window.app.showDetails('sunday')"><h4>الأحد والأعياد</h4><div class="val" id="st-sunday">0</div><div class="sub">يوم تعويض</div></div>
+            <div class="stat-card" onclick="window.app.showDetails('sat')"><h4>رصيد السبت</h4><div class="val" id="st-sat">0</div><div class="sub">عمل (+4) / غياب (-4)</div></div>
+            <div class="stat-card" onclick="window.app.showDetails('sunday')"><h4>رصيد التعويض</h4><div class="val" id="st-sunday">0</div><div class="sub">متبقي (أحد/عيد)</div></div>
             <div class="stat-card" onclick="window.app.showDetails('leave')"><h4>رصيد العطلة</h4><div class="val" id="st-leave">0</div><div class="sub">تراكمي FIFO</div></div>
             <div class="stat-card" onclick="window.app.showDetails('week')"><h4>هذا الأسبوع</h4><div class="val" id="st-week">0</div></div>
             <div class="stat-card" onclick="window.app.showDetails('month')"><h4>هذا الشهر</h4><div class="val" id="st-month">0</div></div>
-            <div class="stat-card full-width" onclick="window.app.showDetails('year')"><h4>المجموع السنوي (ساعات العمل)</h4><div class="val" id="st-year">0</div></div>
+            <div class="stat-card full-width" onclick="window.app.showDetails('year')"><h4>المجموع السنوي (ساعات)</h4><div class="val" id="st-year">0</div></div>
         </div>
 
         <div class="calendar-box">
@@ -324,7 +338,7 @@
             <div style="margin-top:10px;"><label>ملاحظة:</label><textarea id="d-note" class="app-input" rows="2" placeholder="ملاحظات إضافية..."></textarea></div>
             <div class="modal-btns">
                 <button class="btn-save" onclick="window.app.saveDay()">حفظ</button>
-                <button class="btn-del" onclick="window.app.askDelete()">مسح</button>
+                <button id="btn-delete-day" class="btn-del" onclick="window.app.askDelete()">مسح</button>
             </div>
             <button class="btn-close-modal" onclick="document.getElementById('dayModal').style.display='none'">إغلاق</button>
         </div>
@@ -425,171 +439,12 @@
         </div>
     </div>
 
-    <!-- Firebase SDK -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, doc, setDoc, getDoc, collection, getDocs, onSnapshot, updateDoc, deleteField, addDoc, serverTimestamp, query, orderBy, where, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail, sendEmailVerification, setPersistence, browserLocalPersistence, browserSessionPersistence } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-
-        const firebaseConfig = { apiKey: "AIzaSyDhpORuBt8k6YWDLUgRrnqfC8lSS97LexQ", authDomain: "sbota-37391.firebaseapp.com", projectId: "sbota-37391", storageBucket: "sbota-37391.firebasestorage.app", messagingSenderId: "1049902061223", appId: "1:1049902061223:web:68e7c10c349025ca7ead82", measurementId: "G-3B4ESSJWJ9" };
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
-
-        // Exports
-        window.showLoader = (s) => document.getElementById('loader').style.display = s?'flex':'none';
-        window.showError = (id, msg) => { const el=document.getElementById(id); el.textContent=msg; el.style.display='block'; };
-        window.switchView = (id) => { document.querySelectorAll('.view-section').forEach(e=>e.classList.remove('active')); document.getElementById(id).classList.add('active'); document.querySelectorAll('.error-msg,.success-msg').forEach(e=>e.style.display='none'); };
-        window.togglePass = (id) => { const el=document.getElementById(id); el.type = el.type==='password'?'text':'password'; };
-
-        window.handleLogin = async () => {
-            const e = document.getElementById('login-email').value, p = document.getElementById('login-pass').value;
-            if(!e || !p) return window.showError('login-error', 'يرجى ملء البيانات');
-            window.showLoader(true);
-            try { 
-                await setPersistence(auth, document.getElementById('remember-me').checked ? browserLocalPersistence : browserSessionPersistence); 
-                const cred = await signInWithEmailAndPassword(auth, e, p); 
-                
-                const uDoc = await getDoc(doc(db, 'users', cred.user.uid));
-                if(uDoc.exists()) {
-                    const userData = uDoc.data();
-                    if(userData.status === 'pending') {
-                        await signOut(auth);
-                        window.showError('login-error', 'الحساب قيد المراجعة. يرجى انتظار تفعيل الأدمن.');
-                        window.showLoader(false);
-                        return;
-                    }
-                    if(userData.status === 'rejected') {
-                        await signOut(auth);
-                        window.showError('login-error', 'تم رفض طلبك. يرجى التواصل مع الإدارة.');
-                        window.showLoader(false);
-                        return;
-                    }
-                }
-
-                if(!cred.user.emailVerified) { 
-                    await signOut(auth); window.showError('login-error', 'يرجى تفعيل البريد الإلكتروني أولاً'); window.showLoader(false); 
-                } 
-            } catch(error) { 
-                window.showLoader(false); window.showError('login-error', "بيانات خاطئة"); 
-            }
-        };
-
-        window.handleSignup = async () => {
-            const e = document.getElementById('reg-email').value, p = document.getElementById('reg-pass').value, c = document.getElementById('reg-confirm').value;
-            if(!e || !p || !c || p!==c || p.length<6) return window.showError('reg-error', 'خطأ في البيانات');
-            window.showLoader(true);
-            try { 
-                const snap = await getDocs(collection(db, "users")); 
-                const role = snap.empty ? 'admin' : 'user'; 
-                const status = (role === 'admin') ? 'active' : 'pending';
-
-                const cred = await createUserWithEmailAndPassword(auth, e, p); 
-                await sendEmailVerification(cred.user); 
-                
-                await setDoc(doc(db, "users", cred.user.uid), { email: e, role: role, status: status }); 
-                await setDoc(doc(db, "settings", cred.user.uid), { joinDate: '', fullName: '', adjustments: [], dismissedMsgs: [], deletedMsgs: [], nfc: {enabled:false, serial:''}, themeColor: '#4361ee' }); 
-                
-                if(role === 'admin') await setDoc(doc(db, "config", "general"), { 
-                    presets: [{label:'صباح', start:'06:00', end:'14:00'}, {label:'مساء', start:'14:00', end:'22:00'}],
-                    ramadanPresets: [{label:'صباح رمضان', start:'08:00', end:'15:00'}],
-                    ramadanStart: '', ramadanDays: 0
-                }); 
-                
-                await signOut(auth); 
-                
-                if(status === 'pending') {
-                    document.getElementById('reg-success').textContent = "تم إنشاء الحساب. يرجى انتظار تفعيل الأدمن."; 
-                } else {
-                    document.getElementById('reg-success').textContent = "تم التسجيل! يمكنك الدخول الآن.";
-                }
-                document.getElementById('reg-success').style.display = 'block'; 
-            } catch(err) { window.showError('reg-error', 'خطأ في التسجيل'); } finally { window.showLoader(false); }
-        };
-        window.handleReset = async () => { const e = document.getElementById('reset-email').value; if(!e) return; try { await sendPasswordResetEmail(auth, e); document.getElementById('reset-msg').textContent = "تم الإرسال"; document.getElementById('reset-msg').style.display = 'block'; } catch(err) {} };
-        window.handleLogout = async () => { await signOut(auth); window.location.reload(); };
-
-        window.saveData = async (type, data) => { const u = auth.currentUser; if(!u) return; try { if(type === 'personal_settings') await setDoc(doc(db, 'settings', u.uid), data, {merge:true}); else if(type === 'global_config') await setDoc(doc(db, 'config', 'general'), data, {merge:true}); else if(type === 'events') await setDoc(doc(db, 'attendance', u.uid), {events: data}, {merge:true}); } catch(e) {} };
-        window.fbDeleteDay = async (dateKey) => { const u = auth.currentUser; if(!u) return; try { await updateDoc(doc(db, 'attendance', u.uid), { [`events.${dateKey}`]: deleteField() }); } catch(e) {} };
-        window.sendAdminMessage = async (text) => { const u = auth.currentUser; if(!u) return; try { await addDoc(collection(db, "notifications"), { content: text, createdAt: serverTimestamp(), sender: u.uid }); alert("تم"); } catch(e) {} };
-
-        window.approveUser = async (uid) => { try { await updateDoc(doc(db, 'users', uid), { status: 'active' }); alert("تم تفعيل المستخدم ✅"); window.app.openSettings(); } catch(e) { alert("خطأ"); } };
-        window.rejectUser = async (uid) => { if(confirm("هل أنت متأكد من رفض هذا المستخدم؟ سيتم حظره.")) { try { await updateDoc(doc(db, 'users', uid), { status: 'rejected' }); alert("تم رفض المستخدم ❌"); window.app.openSettings(); } catch(e) { alert("خطأ"); } } };
-
-        window.fetchPendingUsers = async () => {
-            const list = document.getElementById('pending-users-list');
-            if(!list) return;
-            list.innerHTML = '<div style="text-align:center;">جاري التحميل...</div>';
-            try {
-                const q = query(collection(db, "users"), where("status", "==", "pending"));
-                const querySnapshot = await getDocs(q);
-                list.innerHTML = '';
-                if(querySnapshot.empty) {
-                    list.innerHTML = '<div style="text-align:center; color:#999; font-size:0.8rem;">لا توجد طلبات جديدة</div>';
-                    return;
-                }
-                querySnapshot.forEach((doc) => {
-                    const u = doc.data();
-                    list.innerHTML += `<div style="display:flex; justify-content:space-between; align-items:center; background:white; padding:8px; border-radius:8px; margin-bottom:5px; border:1px solid #eee;"><span style="font-size:0.85rem; font-weight:bold;">${u.email}</span><div style="display:flex; gap:5px;"><button onclick="window.approveUser('${doc.id}')" style="background:#e8f5e9; color:#2e7d32; border:none; padding:4px 8px; border-radius:6px; cursor:pointer;">✅</button><button onclick="window.rejectUser('${doc.id}')" style="background:#ffebee; color:#c62828; border:none; padding:4px 8px; border-radius:6px; cursor:pointer;">❌</button></div></div>`;
-                });
-            } catch(e) { list.innerHTML = 'خطأ في التحميل'; }
-        };
-
-        onAuthStateChanged(auth, async (user) => {
-            if(user) {
-                const uDoc = await getDoc(doc(db, 'users', user.uid));
-                if(uDoc.exists()) {
-                    const data = uDoc.data();
-                    if(data.status !== 'active') {
-                        if(data.status === 'pending' || data.status === 'rejected') {
-                            await signOut(auth);
-                            document.getElementById('auth-overlay').style.display = 'flex';
-                            return;
-                        }
-                    }
-                    window.appData.role = data.role;
-                    if(window.appData.role === 'admin') {
-                        document.getElementById('admin-section').style.display = 'block';
-                    }
-                }
-
-                if(user.emailVerified) {
-                    document.getElementById('auth-overlay').style.display = 'none'; document.getElementById('app-container').style.display = 'block';
-                    document.getElementById('u-name').textContent = user.email.split('@')[0];
-                    window.app.initTheme(); window.showLoader(true);
-                    
-                    onSnapshot(doc(db, "attendance", user.uid), (doc) => { if(doc.exists()) window.appData.events = doc.data().events || {}; window.app.renderCalendar(); window.app.checkAutoFill(); });
-                    onSnapshot(doc(db, "settings", user.uid), (doc) => { 
-                        if(doc.exists()) window.appData.personal = doc.data() || {};
-                        if(!window.appData.personal.nfc) window.appData.personal.nfc = {enabled: false, serial: ''};
-                        if(!window.appData.personal.dismissedMsgs) window.appData.personal.dismissedMsgs = [];
-                        if(!window.appData.personal.deletedMsgs) window.appData.personal.deletedMsgs = [];
-                        
-                        document.getElementById('u-name').textContent = window.appData.personal.fullName || user.email.split('@')[0];
-                        document.getElementById('btn-nfc-scan').style.display = window.appData.personal.nfc.enabled ? 'flex' : 'none';
-                        
-                        if(window.appData.personal.themeColor) {
-                            window.app.applyColor(window.appData.personal.themeColor);
-                        }
-
-                        window.app.calcStats(); window.app.checkMessages();
-                    });
-                    onSnapshot(doc(db, "config", "general"), (doc) => { if(doc.exists()) { window.appData.global = doc.data() || {}; if(window.appData.global.appName) { document.title = window.appData.global.appName; document.getElementById('header-title').textContent = window.appData.global.appName; } } });
-                    const q = query(collection(db, "notifications"), orderBy("createdAt", "desc"));
-                    onSnapshot(q, (snapshot) => { let msgs = []; snapshot.forEach((doc) => msgs.push({ id: doc.id, ...doc.data() })); window.appData.messages = msgs; window.app.checkMessages(); });
-                    window.showLoader(false);
-                } else { if(user) await signOut(auth); document.getElementById('auth-overlay').style.display = 'flex'; document.getElementById('app-container').style.display = 'none'; window.showLoader(false); }
-            } else {
-                document.getElementById('auth-overlay').style.display = 'flex'; document.getElementById('app-container').style.display = 'none'; window.showLoader(false);
-            }
-        });
-    </script>
-
+    <!-- Main Logic Script -->
     <script>
         const nationalHolidays = { "1-11":"وثيقة الاستقلال","1-14":"رأس السنة الأمازيغية","5-1":"عيد الشغل","7-30":"عيد العرش","8-14":"وادي الذهب","8-20":"ثورة الملك والشعب","8-21":"عيد الشباب","10-31":"عيد الوحدة","11-6":"المسيرة الخضراء","11-18":"عيد الاستقلال","12-9":"عيد الوساطة" };
         const dayNames = ["إثنين", "ثلاثاء", "أربعاء", "خميس", "جمعة", "سبت", "أحد"];
         const monthNames = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
-        let currentDate = new Date(2026, 0, 1);
+        let currentDate = new Date(); // Start at current date
         let selectedKey = null;
         let activeMsgId = null;
         let deleteType = null;
@@ -613,7 +468,22 @@
                         else document.body.classList.remove('dark-mode');
                     }
                 });
+                
+                // Initialize Swipe Listeners
+                window.app.initGestures();
             },
+            
+            initGestures: () => {
+                const cal = document.querySelector('.calendar-box');
+                let startX = 0, endX = 0;
+                cal.addEventListener('touchstart', e => startX = e.changedTouches[0].screenX);
+                cal.addEventListener('touchend', e => {
+                    endX = e.changedTouches[0].screenX;
+                    if (endX < startX - 50) window.app.navMonth(1); // Swipe Left -> Next
+                    if (endX > startX + 50) window.app.navMonth(-1); // Swipe Right -> Prev
+                });
+            },
+
             toggleTheme: () => { 
                 document.body.classList.toggle('dark-mode'); 
                 localStorage.setItem('theme', document.body.classList.contains('dark-mode') ? 'dark' : 'light'); 
@@ -624,12 +494,7 @@
                 if(!color) return;
                 document.documentElement.style.setProperty('--primary', color);
                 
-                // Simple darkening for hover logic approximation
-                // Note: For true darkening we need RGB math, but this sets the main vibe
-                // We'll let primary-dark stay specific or match primary for now to avoid complexity in this snippet
-                // Or we can try to approximate a darker shade string if it's hex
                 if(color.startsWith('#') && color.length === 7) {
-                    // Quick darken algo
                     let col = parseInt(color.slice(1), 16);
                     let amt = -20;
                     let r = (col >> 16) + amt;
@@ -641,6 +506,9 @@
                 
                 const picker = document.getElementById('s-theme-color');
                 if(picker) picker.value = color;
+                
+                const overlay = document.getElementById('auth-overlay');
+                if(overlay) overlay.style.background = `linear-gradient(135deg, ${color}, #4cc9f0)`;
             },
 
             isRamadan: (dateKey) => {
@@ -807,11 +675,11 @@
                     const key = `${y}-${String(m+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
                     const evt = window.appData.events[key], isNat = nationalHolidays[`${m+1}-${i}`];
                     const isRam = window.app.isRamadan(key);
-                    let cls = '', natCls = isNat ? 'nat-holiday' : '', ramCls = isRam ? 'is-ramadan' : '', noteInd = (evt && evt.note) ? '<div class="note-dot"></div>' : '', ramIcon = isRam ? '<span class="ramadan-icon">🌙</span>' : '';
+                    let cls = '', natCls = isNat ? 'nat-holiday' : '', ramCls = isRam ? 'is-ramadan' : '', noteInd = (evt && evt.note) ? '<div class="note-dot"></div>' : '';
                     if(evt) cls = `st-${evt.type}`;
                     const dObj = new Date(y, m, i), now = new Date(); now.setHours(0,0,0,0);
                     const classes = `day-cell ${dObj.getTime()===now.getTime()?'today':''} ${dObj.getDay()===0||dObj.getDay()===6?'weekend':''} ${natCls} ${ramCls} ${cls}`;
-                    grid.innerHTML += `<div class="${classes}" onclick="window.app.openDay('${key}')"><span>${i}</span>${noteInd}${ramIcon}</div>`;
+                    grid.innerHTML += `<div class="${classes}" onclick="window.app.openDay('${key}')"><span>${i}</span>${noteInd}</div>`;
                 }
                 window.app.calcStats();
             },
@@ -822,6 +690,10 @@
                 if(new Date(key).setHours(0,0,0,0) > tomorrow.getTime() && !natName) return;
 
                 selectedKey = key; document.getElementById('modal-title').textContent = key; document.getElementById('dayModal').style.display = 'flex';
+                
+                const deleteBtn = document.getElementById('btn-delete-day');
+                if(window.appData.events[key]) deleteBtn.style.display = 'block'; else deleteBtn.style.display = 'none';
+
                 let evt = window.appData.events[key] || (natName ? {type:'eid',eidStatus:'rest',eidName:natName} : {type:'work',start:'',end:'',eidStatus:'work'});
                 document.getElementById('d-type').value = evt.type;
                 document.getElementById('d-start').value = evt.start||''; document.getElementById('d-end').value = evt.end||'';
@@ -884,7 +756,14 @@
             },
             askDelete: (type, id) => { deleteType=type||'day'; if(type==='msg') pendingMsgId=id; document.getElementById('confirmModal').style.display='flex'; },
             performDelete: () => {
-                if(deleteType==='day') { if(window.appData.events[selectedKey]) { delete window.appData.events[selectedKey]; window.fbDeleteDay(selectedKey); } document.getElementById('dayModal').style.display='none'; window.app.renderCalendar(); }
+                if(deleteType==='day') { 
+                    if(window.appData.events[selectedKey]) { 
+                        delete window.appData.events[selectedKey]; 
+                        window.fbDeleteDay(selectedKey); 
+                    } 
+                    document.getElementById('dayModal').style.display='none'; 
+                    window.app.renderCalendar();
+                }
                 else if(deleteType==='msg') { window.appData.personal.deletedMsgs.push(pendingMsgId); window.saveData('personal_settings', window.appData.personal); window.app.openInbox(); }
                 document.getElementById('confirmModal').style.display='none';
             },
@@ -928,55 +807,108 @@
             },
             
             calcStats: () => {
-                let net=0, sat=0, tYearWorkHours=0, tSickDays=0, tWeek=0, tMonth=0;
-                let yr=currentDate.getFullYear(), mth=currentDate.getMonth(), today=new Date();
-                const weekStart=new Date(today); weekStart.setDate(today.getDate()-today.getDay()); weekStart.setHours(0,0,0,0);
-                const weekEnd=new Date(weekStart); weekEnd.setDate(weekStart.getDate()+6); weekEnd.setHours(23,59,59,999);
+                let net = 0;
+                let satBalance = 0;
+                let recupEarned = 0;
+                let recupTaken = 0;
+                
+                let tYearWorkHours = 0;
+                let tWeek = 0;
+                let tMonth = 0;
                 
                 const breakdown = window.app.getLeaveBreakdown();
                 const leave = breakdown.pools.reduce((sum, pool) => sum + pool.remaining, 0);
-                let pending = 0;
 
+                let yr = currentDate.getFullYear();
+                let mth = currentDate.getMonth();
+                
+                const today = new Date();
+                const weekStart = new Date(today); weekStart.setDate(today.getDate() - today.getDay()); weekStart.setHours(0,0,0,0);
+                const weekEnd = new Date(weekStart); weekEnd.setDate(weekStart.getDate() + 6); weekEnd.setHours(23,59,59,999);
+
+                // 1. حساب الإحصائيات العامة من الأحداث المسجلة
                 Object.entries(window.appData.events).forEach(([k, evt]) => {
                      const d = new Date(k);
-                     if(d.getFullYear()===yr) {
-                         const isRam = window.app.isRamadan(k);
-                         
-                         if(evt.type==='work'||evt.type==='paid'||(evt.type==='eid'&&evt.eidStatus==='work')) {
-                             let effectiveHours = (evt.type === 'paid') ? 8 : (isRam ? (evt.hours + 1) : evt.hours);
-                             
-                             tYearWorkHours += effectiveHours;
-                             net += (effectiveHours - 8);
+                     
+                     // حساب التعويض المستهلك
+                     if(evt.type === 'recup') { recupTaken++; }
+                     // حسابات أعياد دينية مشتغلة (عيد)
+                     if(evt.type === 'eid' && evt.eidStatus === 'work') { recupEarned++; }
 
-                             if(d.getMonth()===mth) tMonth += effectiveHours;
-                             if(d>=weekStart && d<=weekEnd) tWeek += effectiveHours;
-                         } else if(evt.type==='absent') {
+                     // حسابات السنة الحالية فقط (للميزان والساعات)
+                     if(d.getFullYear() === yr) {
+                         const isRam = window.app.isRamadan(k);
+                         let effectiveHours = 0;
+
+                         // تحديد الساعات الفعلية (للميزان)
+                         if(evt.type === 'work' || evt.type === 'paid' || (evt.type === 'eid' && evt.eidStatus === 'work')) {
+                             effectiveHours = (evt.type === 'paid') ? 8 : (isRam ? (evt.hours + 1) : evt.hours);
+                             net += (effectiveHours - 8); // الميزان العادي
+                         } else if (evt.type === 'holiday') {
+                             effectiveHours = 8; // العطلة تحسب 8 ساعات في المجموع السنوي ولكن لا تؤثر على الميزان
+                         } else if(evt.type === 'absent') {
                              net -= 8;
                          }
 
-                         if(evt.type==='sick') { tSickDays++; }
-                         if(d.getDay() === 6) {
-                             if(evt.type==='work' || evt.type==='paid' || (evt.type==='eid' && evt.eidStatus==='work')) sat+=4;
-                             else sat-=4;
-                         }
+                         // تراكمي الساعات والمجموع
+                         if(evt.type !== 'absent' && evt.type !== 'sick') tYearWorkHours += effectiveHours;
+                         if(d.getMonth() === mth) tMonth += effectiveHours;
+                         if(d >= weekStart && d <= weekEnd) tWeek += effectiveHours;
                      }
                 });
-                
-                // Sunday Logic
-                const used = Object.values(window.appData.events).filter(e=>e.type==='recup').map(e=>e.recupTarget);
-                Object.entries(window.appData.events).forEach(([k,e]) => { 
-                    const d=new Date(k);
-                    const isNat = nationalHolidays[`${d.getMonth()+1}-${d.getDate()}`];
-                    if(d.getDay()===0 && !isNat && e.type==='work') { if(!used.includes(k)) pending++; }
-                });
 
+                // 2. حلقة تكرارية خاصة لحساب السبت والأحد (تشمل الأيام غير المسجلة)
+                let loopPtr = new Date(2026, 0, 1);
+                const loopEnd = new Date(); 
+                
+                while(loopPtr <= loopEnd) {
+                    const k = `${loopPtr.getFullYear()}-${String(loopPtr.getMonth()+1).padStart(2,'0')}-${String(loopPtr.getDate()).padStart(2,'0')}`;
+                    const evt = window.appData.events[k];
+                    const day = loopPtr.getDay();
+                    const natName = nationalHolidays[`${loopPtr.getMonth()+1}-${loopPtr.getDate()}`];
+
+                    // منطق السبت
+                    if(day === 6) {
+                        if(evt) {
+                            if(evt.type === 'work' || (evt.type==='eid' && evt.eidStatus==='work')) {
+                                satBalance += 4;
+                            } else if (evt.type === 'absent') {
+                                satBalance -= 4;
+                            }
+                        } else {
+                            satBalance -= 4;
+                        }
+                    }
+
+                    // منطق الأحد والعيد (الأولوية للعيد)
+                    if(day === 0) {
+                        // إذا كان عيداً وطنياً (سواء عملت أو لا) -> يستحق التعويض
+                        if(natName) {
+                            recupEarned++;
+                        }
+                        // إذا لم يكن عيداً، ولكنه يوم عمل
+                        else if (evt && evt.type === 'work') {
+                            recupEarned++;
+                        }
+                    }
+
+                    loopPtr.setDate(loopPtr.getDate() + 1);
+                }
+                
+                const pendingRecup = recupEarned - recupTaken;
+
+                // تحديث الواجهة
                 document.getElementById('st-net').innerHTML = `<span class="${net>=0?'txt-green':'txt-red'}">${net.toFixed(1)}</span>`;
-                document.getElementById('st-sat').innerHTML = `<span class="${sat>=0?'txt-green':'txt-red'}">${sat}</span>`;
+                document.getElementById('st-sat').innerHTML = `<span class="${satBalance>=0?'txt-green':'txt-red'}">${satBalance}</span>`;
+                
+                document.getElementById('st-sunday').textContent = pendingRecup; 
+                document.getElementById('st-sunday').className = pendingRecup > 0 ? 'val txt-green' : 'val';
+
                 document.getElementById('st-leave').textContent = leave.toFixed(1); 
-                document.getElementById('st-sunday').textContent = pending;
                 document.getElementById('st-week').textContent = tWeek.toFixed(1); 
                 document.getElementById('st-month').textContent = tMonth.toFixed(1); 
                 document.getElementById('st-year').innerHTML = `<div style="font-size:1.8rem; font-weight:bold; color:var(--primary)">${tYearWorkHours.toFixed(0)} <span style="font-size:1rem; color:var(--text-light)">ساعة</span></div>`;
+                
                 window.app.renderChart();
             },
             
@@ -1000,15 +932,104 @@
                     document.getElementById('searchModal').style.display = 'flex'; return;
                 }
 
-                if (cat === 'year') {
+                else if (cat === 'sunday') {
+                    document.getElementById('search-title').textContent = 'رصيد التعويض (الأحد/الأعياد)';
+                    list.innerHTML += `<div class="details-header">أيام تستحق التعويض (المكتسبة):</div>`;
+                    
+                    let loopPtr = new Date(2026, 0, 1);
+                    const loopEnd = new Date();
+                    let hasEarned = false;
+
+                    while(loopPtr <= loopEnd) {
+                        const k = `${loopPtr.getFullYear()}-${String(loopPtr.getMonth()+1).padStart(2,'0')}-${String(loopPtr.getDate()).padStart(2,'0')}`;
+                        const evt = window.appData.events[k];
+                        const day = loopPtr.getDay();
+                        const natName = nationalHolidays[`${loopPtr.getMonth()+1}-${loopPtr.getDate()}`];
+                        
+                        let earned = false;
+                        let reason = "";
+                        let typeClass = "pos";
+
+                        // 1. أولوية قصوى: عيد وطني (بغض النظر عن اليوم)
+                        if (natName) {
+                            if (day === 0) {
+                                // عيد صادف الأحد
+                                earned = true;
+                                if (evt && evt.type === 'work') reason = `عمل يوم عيد (صادف الأحد) - ${natName}`;
+                                else reason = `عيد وطني يوم أحد (${natName})`;
+                            }
+                        }
+                        // 2. عمل يوم الأحد (وليس عيداً وطنياً)
+                        else if (day === 0 && evt && evt.type === 'work') {
+                            earned = true; reason = "عمل يوم أحد";
+                        }
+                        // 3. عمل يوم عيد ديني
+                        else if (evt && evt.type === 'eid' && evt.eidStatus === 'work') {
+                            earned = true; reason = `عمل يوم عيد (${evt.eidName || 'ديني'})`;
+                        }
+
+                        if(earned) {
+                            hasEarned = true;
+                            list.innerHTML += `<div class="detail-item ${typeClass}" onclick="window.app.openDay('${k}')"><span>${k} <small>(${reason})</small></span><span class="d-val">+1</span></div>`;
+                        }
+                        loopPtr.setDate(loopPtr.getDate() + 1);
+                    }
+                    if(!hasEarned) list.innerHTML += '<div style="text-align:center;color:#999;font-size:0.8rem;">لا يوجد</div>';
+
+                    list.innerHTML += `<div class="details-header">أيام استرجعتها (Recuperation):</div>`;
+                    let takenList = [];
+                    for(const [k, evt] of Object.entries(window.appData.events)) {
+                        if(evt.type === 'recup') {
+                            takenList.push({date:k, note: evt.recupTarget ? `تعويض عن ${evt.recupTarget}` : 'استرجاع', val:'-1', type:'neg'});
+                        }
+                    }
+                    if(takenList.length === 0) list.innerHTML += '<div style="text-align:center;color:#999;font-size:0.8rem;">لا يوجد</div>';
+                    takenList.sort((a,b) => new Date(b.date) - new Date(a.date));
+                    takenList.forEach(item => list.innerHTML += `<div class="detail-item ${item.type}" onclick="window.app.openDay('${item.date}')"><span>${item.date} <small>(${item.note})</small></span><span class="d-val ${item.type}">${item.val}</span></div>`);
+                    
+                    document.getElementById('searchModal').style.display = 'flex'; return;
+                }
+
+                // تفاصيل السبت
+                else if (cat === 'sat') {
+                    document.getElementById('search-title').textContent = 'تفاصيل رصيد السبت';
+                    let loopPtr = new Date(2026, 0, 1);
+                    const loopEnd = new Date();
+                    
+                    while(loopPtr <= loopEnd) {
+                        if(loopPtr.getDay() === 6) { 
+                            const k = `${loopPtr.getFullYear()}-${String(loopPtr.getMonth()+1).padStart(2,'0')}-${String(loopPtr.getDate()).padStart(2,'0')}`;
+                            const evt = window.appData.events[k];
+                            let note = '', val = 0, type = 'neutral';
+
+                            if(evt) {
+                                if(evt.type === 'work' || (evt.type==='eid' && evt.eidStatus==='work')) {
+                                    note = 'عمل'; val = 4; type = 'pos';
+                                } else if (evt.type === 'absent') {
+                                    note = 'غياب مسجل'; val = -4; type = 'neg';
+                                }
+                            } else {
+                                note = 'غياب (غير مسجل)'; val = -4; type = 'neg';
+                            }
+
+                            if(val !== 0) {
+                                tempList.push({date:k, note:note, val:(val>0?'+':'')+val, type:type});
+                            }
+                        }
+                        loopPtr.setDate(loopPtr.getDate() + 1);
+                    }
+                    tempList.sort((a,b) => new Date(b.date) - new Date(a.date));
+                } 
+                
+                else if (cat === 'year') {
                     let summary = { work:{c:0,h:0,l:'عمل',i:'✅'}, holiday:{c:0,h:0,l:'عطلة',i:'🏖️'}, sick:{c:0,h:0,l:'مرض',i:'💊'}, absent:{c:0,h:0,l:'غياب',i:'❌'}, eid:{c:0,h:0,l:'أعياد',i:'🎉'}, recup:{c:0,h:0,l:'استرجاع',i:'🔄'}, paid:{c:0,h:0,l:'يوم مدفوع',i:'💰'} };
                     for(const [k, e] of Object.entries(window.appData.events)) {
                         if(new Date(k).getFullYear() === yr) {
                             if(summary[e.type]) {
                                 summary[e.type].c++;
-                                if(e.type === 'work' || e.type === 'paid' || (e.type === 'eid' && e.eidStatus === 'work')) {
+                                if(e.type === 'work' || e.type === 'paid' || e.type === 'holiday' || (e.type === 'eid' && e.eidStatus === 'work')) {
                                     const isRam = window.app.isRamadan(k);
-                                    let effectiveHours = (e.type === 'paid') ? 8 : (isRam ? (e.hours + 1) : e.hours);
+                                    let effectiveHours = (e.type === 'paid' || e.type === 'holiday') ? 8 : (isRam ? (e.hours + 1) : e.hours);
                                     summary[e.type].h += effectiveHours;
                                 }
                             }
@@ -1017,38 +1038,31 @@
                     list.innerHTML = `<div class="details-header">ملخص سنة ${yr}</div>`;
                     for(const [key, data] of Object.entries(summary)) {
                         if(data.c > 0) {
-                            let valStr = (key === 'work' || key === 'eid' || key === 'paid') ? `${data.h.toFixed(1)} ساعة` : `${data.c} يوم`;
+                            let isHoursType = (key === 'work' || key === 'eid' || key === 'paid' || key === 'holiday');
+                            let valStr = isHoursType ? `${data.h.toFixed(1)} ساعة` : `${data.c} يوم`;
                             list.innerHTML += `<div class="detail-item neutral" onclick="window.app.showDetails('year_sub_${key}')"><span>${data.i} ${data.l}</span><span class="d-val">${valStr}</span></div>`;
                         }
                     }
                     document.getElementById('searchModal').style.display = 'flex'; return;
                 }
-
-                if (cat.startsWith('year_sub_')) {
+                
+                else if (cat.startsWith('year_sub_')) {
                     const subType = cat.replace('year_sub_', '');
                     document.getElementById('search-title').textContent = 'تفاصيل: ' + subType;
                     list.innerHTML = `<div class="details-header" style="cursor:pointer; color:var(--text-light)" onclick="window.app.showDetails('year')">⬅️ عودة للملخص</div>`;
                     for(const [k, evt] of Object.entries(window.appData.events)) {
                         if(new Date(k).getFullYear() === yr && evt.type === subType) {
                             let val = 'يوم';
-                            if(evt.type==='work' || evt.type==='paid' || (evt.type==='eid' && evt.eidStatus==='work')) {
+                            if(evt.type==='work' || evt.type==='paid' || evt.type==='holiday' || (evt.type==='eid' && evt.eidStatus==='work')) {
                                 const isRam = window.app.isRamadan(k);
-                                let effectiveHours = (evt.type === 'paid') ? 8 : (isRam ? (evt.hours + 1) : evt.hours);
+                                let effectiveHours = (evt.type === 'paid' || evt.type === 'holiday') ? 8 : (isRam ? (evt.hours + 1) : evt.hours);
                                 val = effectiveHours.toFixed(1) + 'س';
                             }
                             tempList.push({date:k, note:evt.note||'', val:val, type: evt.type==='absent'?'neg':'pos'});
                         }
                     }
-                } else if (cat === 'sat') {
-                    for(const [k, evt] of Object.entries(window.appData.events)) {
-                        const d = new Date(k);
-                        if(d.getFullYear() === yr && d.getDay() === 6) {
-                            let st = 'غياب', val = -4, type = 'neg';
-                            if(evt && (evt.type==='work' || evt.type==='paid' || (evt.type==='eid' && evt.eidStatus==='work'))) { st='عمل'; val=4; type='pos'; }
-                            tempList.push({date:k, note:st, val:(val>0?'+':'')+val, type});
-                        }
-                    }
-                } else if (cat === 'net') {
+                } 
+                else if (cat === 'net') {
                     for(const [k, evt] of Object.entries(window.appData.events)) {
                         if(new Date(k).getFullYear() !== yr) continue;
                         let diff = 0, note = '';
@@ -1060,7 +1074,8 @@
                         else if(evt.type==='absent') { diff = -8; note='غياب'; }
                         if(diff !== 0) tempList.push({date:k, note, val:(diff>0?'+':'')+diff.toFixed(1), type:diff>=0?'pos':'neg'});
                     }
-                } else if (['week', 'month'].includes(cat)) {
+                } 
+                else if (['week', 'month'].includes(cat)) {
                      const today = new Date();
                      const weekStart=new Date(today); weekStart.setDate(today.getDate()-today.getDay()); weekStart.setHours(0,0,0,0);
                      const weekEnd=new Date(weekStart); weekEnd.setDate(weekStart.getDate()+6); weekEnd.setHours(23,59,59,999);
@@ -1081,11 +1096,17 @@
                      }
                 }
 
-                tempList.sort((a,b) => new Date(b.date) - new Date(a.date));
-                if(tempList.length === 0 && !cat.startsWith('year_sub')) list.innerHTML += '<div style="text-align:center; padding:10px;">لا توجد بيانات</div>';
-                tempList.forEach(item => {
-                    list.innerHTML += `<div class="detail-item ${item.type}" onclick="window.app.openDay('${item.date}')"><span>${item.date} <small>(${item.note})</small></span><span class="d-val ${item.type}">${item.val}</span></div>`;
-                });
+                if (cat !== 'sunday' && cat !== 'sat') {
+                    tempList.sort((a,b) => new Date(b.date) - new Date(a.date));
+                    if(tempList.length === 0 && !cat.startsWith('year_sub')) list.innerHTML += '<div style="text-align:center; padding:10px;">لا توجد بيانات</div>';
+                    tempList.forEach(item => {
+                        list.innerHTML += `<div class="detail-item ${item.type}" onclick="window.app.openDay('${item.date}')"><span>${item.date} <small>(${item.note})</small></span><span class="d-val ${item.type}">${item.val}</span></div>`;
+                    });
+                } else {
+                    tempList.forEach(item => {
+                        list.innerHTML += `<div class="detail-item ${item.type}" onclick="window.app.openDay('${item.date}')"><span>${item.date} <small>(${item.note})</small></span><span class="d-val ${item.type}">${item.val}</span></div>`;
+                    });
+                }
                 document.getElementById('searchModal').style.display = 'flex';
             },
 
@@ -1241,6 +1262,216 @@
             },
             showLegendToast: (msg) => { const t = document.getElementById('legend-toast'); t.textContent = msg; t.classList.add('show-toast'); setTimeout(() => t.classList.remove('show-toast'), 3000); }
         };
+    </script>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, getDocs, onSnapshot, updateDoc, deleteField, addDoc, serverTimestamp, query, orderBy, where, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail, sendEmailVerification, setPersistence, browserLocalPersistence, browserSessionPersistence } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+        // Your Firebase Config - Ensure these are correct
+        const firebaseConfig = { apiKey: "AIzaSyDhpORuBt8k6YWDLUgRrnqfC8lSS97LexQ", authDomain: "sbota-37391.firebaseapp.com", projectId: "sbota-37391", storageBucket: "sbota-37391.firebasestorage.app", messagingSenderId: "1049902061223", appId: "1:1049902061223:web:68e7c10c349025ca7ead82", measurementId: "G-3B4ESSJWJ9" };
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        // Exports
+        window.showLoader = (s) => document.getElementById('loader').style.display = s?'flex':'none';
+        window.showError = (id, msg) => { const el=document.getElementById(id); el.textContent=msg; el.style.display='block'; };
+        window.switchView = (id) => { document.querySelectorAll('.view-section').forEach(e=>e.classList.remove('active')); document.getElementById(id).classList.add('active'); document.querySelectorAll('.error-msg,.success-msg').forEach(e=>e.style.display='none'); };
+        window.togglePass = (id) => { const el=document.getElementById(id); el.type = el.type==='password'?'text':'password'; };
+
+        window.handleLogin = async () => {
+            const e = document.getElementById('login-email').value, p = document.getElementById('login-pass').value;
+            if(!e || !p) return window.showError('login-error', 'يرجى ملء البيانات');
+            window.showLoader(true);
+            try { 
+                await setPersistence(auth, document.getElementById('remember-me').checked ? browserLocalPersistence : browserSessionPersistence); 
+                const cred = await signInWithEmailAndPassword(auth, e, p); 
+                
+                const uDoc = await getDoc(doc(db, 'users', cred.user.uid));
+                if(uDoc.exists()) {
+                    const userData = uDoc.data();
+                    if(userData.status === 'pending') {
+                        await signOut(auth);
+                        window.showError('login-error', 'الحساب قيد المراجعة. يرجى انتظار تفعيل الأدمن.');
+                        window.showLoader(false);
+                        return;
+                    }
+                    if(userData.status === 'rejected') {
+                        await signOut(auth);
+                        window.showError('login-error', 'تم رفض طلبك. يرجى التواصل مع الإدارة.');
+                        window.showLoader(false);
+                        return;
+                    }
+                }
+
+                if(!cred.user.emailVerified) { 
+                    await signOut(auth); window.showError('login-error', 'يرجى تفعيل البريد الإلكتروني أولاً'); window.showLoader(false); 
+                } 
+            } catch(error) { 
+                window.showLoader(false); window.showError('login-error', "بيانات خاطئة"); 
+            }
+        };
+
+        window.handleSignup = async () => {
+            const e = document.getElementById('reg-email').value, p = document.getElementById('reg-pass').value, c = document.getElementById('reg-confirm').value;
+            if(!e || !p || !c || p!==c || p.length<6) return window.showError('reg-error', 'يرجى ملء جميع الحقول');
+            if(p !== c) return window.showError('reg-error', 'كلمات المرور غير متطابقة');
+            if(p.length < 6) return window.showError('reg-error', 'كلمة المرور يجب أن تكون 6 أحرف على الأقل');
+
+            window.showLoader(true);
+            try { 
+                // 1. إنشاء الحساب أولاً
+                const cred = await createUserWithEmailAndPassword(auth, e, p); 
+                
+                // 2. التحقق من المستخدمين الموجودين
+                const snap = await getDocs(collection(db, "users")); 
+                const role = snap.empty ? 'admin' : 'user'; 
+                const status = (role === 'admin') ? 'active' : 'pending';
+
+                // 3. إرسال رابط التفعيل
+                await sendEmailVerification(cred.user); 
+                
+                // 4. حفظ البيانات
+                await setDoc(doc(db, "users", cred.user.uid), { 
+                    email: e, 
+                    role: role, 
+                    status: status 
+                }); 
+                
+                // 5. إنشاء الإعدادات
+                await setDoc(doc(db, "settings", cred.user.uid), { 
+                    joinDate: '', 
+                    fullName: '', 
+                    adjustments: [], 
+                    dismissedMsgs: [], 
+                    deletedMsgs: [], 
+                    nfc: {enabled:false, serial:''}, 
+                    themeColor: '#4361ee' 
+                }); 
+                
+                // 6. إعدادات الأدمن
+                if(role === 'admin') {
+                    await setDoc(doc(db, "config", "general"), { 
+                        presets: [
+                            {label:'صباح', start:'08:00', end:'16:00'},
+                            {label:'نصف يوم', start:'08:00', end:'12:00'}
+                        ],
+                        ramadanPresets: [
+                            {label:'صباح رمضان', start:'09:00', end:'15:00'}
+                        ],
+                        ramadanStart: '', 
+                        ramadanDays: 0,
+                        appName: 'المدير الذكي'
+                    }); 
+                }
+                
+                // 7. تسجيل الخروج
+                await signOut(auth); 
+                
+                const successMsg = (status === 'pending') 
+                    ? "تم إنشاء الحساب بنجاح. يرجى انتظار تفعيل الأدمن لاشتراكك."
+                    : "تم إنشاء حساب الأدمن! يرجى تفعيل البريد الإلكتروني ثم الدخول.";
+                
+                document.getElementById('reg-success').textContent = successMsg;
+                document.getElementById('reg-success').style.display = 'block'; 
+                
+                document.getElementById('reg-email').value = '';
+                document.getElementById('reg-pass').value = '';
+                document.getElementById('reg-confirm').value = '';
+
+            } catch(err) { 
+                console.error("Signup Error:", err);
+                let msg = 'حدث خطأ في التسجيل';
+                if(err.code === 'auth/email-already-in-use') msg = 'البريد الإلكتروني مسجل مسبقاً';
+                if(err.code === 'auth/invalid-email') msg = 'صيغة البريد الإلكتروني خاطئة';
+                if(err.code === 'permission-denied') msg = 'لا تملك صلاحية الوصول لقاعدة البيانات (تأكد من Rules)';
+                
+                window.showError('reg-error', msg); 
+            } finally { 
+                window.showLoader(false); 
+            }
+        };
+
+        window.handleReset = async () => { const e = document.getElementById('reset-email').value; if(!e) return; try { await sendPasswordResetEmail(auth, e); document.getElementById('reset-msg').textContent = "تم الإرسال"; document.getElementById('reset-msg').style.display = 'block'; } catch(err) {} };
+        window.handleLogout = async () => { await signOut(auth); window.location.reload(); };
+
+        window.saveData = async (type, data) => { const u = auth.currentUser; if(!u) return; try { if(type === 'personal_settings') await setDoc(doc(db, 'settings', u.uid), data, {merge:true}); else if(type === 'global_config') await setDoc(doc(db, 'config', 'general'), data, {merge:true}); else if(type === 'events') await setDoc(doc(db, 'attendance', u.uid), {events: data}, {merge:true}); } catch(e) {} };
+        window.fbDeleteDay = async (dateKey) => { const u = auth.currentUser; if(!u) return; try { await updateDoc(doc(db, 'attendance', u.uid), { [`events.${dateKey}`]: deleteField() }); } catch(e) {} };
+        window.sendAdminMessage = async (text) => { const u = auth.currentUser; if(!u) return; try { await addDoc(collection(db, "notifications"), { content: text, createdAt: serverTimestamp(), sender: u.uid }); alert("تم"); } catch(e) {} };
+
+        window.approveUser = async (uid) => { try { await updateDoc(doc(db, 'users', uid), { status: 'active' }); alert("تم تفعيل المستخدم ✅"); window.app.openSettings(); } catch(e) { alert("خطأ"); } };
+        window.rejectUser = async (uid) => { if(confirm("هل أنت متأكد من رفض هذا المستخدم؟ سيتم حظره.")) { try { await updateDoc(doc(db, 'users', uid), { status: 'rejected' }); alert("تم رفض المستخدم ❌"); window.app.openSettings(); } catch(e) { alert("خطأ"); } } };
+
+        window.fetchPendingUsers = async () => {
+            const list = document.getElementById('pending-users-list');
+            if(!list) return;
+            list.innerHTML = '<div style="text-align:center;">جاري التحميل...</div>';
+            try {
+                const q = query(collection(db, "users"), where("status", "==", "pending"));
+                const querySnapshot = await getDocs(q);
+                list.innerHTML = '';
+                if(querySnapshot.empty) {
+                    list.innerHTML = '<div style="text-align:center; color:#999; font-size:0.8rem;">لا توجد طلبات جديدة</div>';
+                    return;
+                }
+                querySnapshot.forEach((doc) => {
+                    const u = doc.data();
+                    list.innerHTML += `<div style="display:flex; justify-content:space-between; align-items:center; background:white; padding:8px; border-radius:8px; margin-bottom:5px; border:1px solid #eee;"><span style="font-size:0.85rem; font-weight:bold;">${u.email}</span><div style="display:flex; gap:5px;"><button onclick="window.approveUser('${doc.id}')" style="background:#e8f5e9; color:#2e7d32; border:none; padding:4px 8px; border-radius:6px; cursor:pointer;">✅</button><button onclick="window.rejectUser('${doc.id}')" style="background:#ffebee; color:#c62828; border:none; padding:4px 8px; border-radius:6px; cursor:pointer;">❌</button></div></div>`;
+                });
+            } catch(e) { list.innerHTML = 'خطأ في التحميل'; }
+        };
+
+        onAuthStateChanged(auth, async (user) => {
+            if(user) {
+                const uDoc = await getDoc(doc(db, 'users', user.uid));
+                if(uDoc.exists()) {
+                    const data = uDoc.data();
+                    if(data.status !== 'active') {
+                        if(data.status === 'pending' || data.status === 'rejected') {
+                            await signOut(auth);
+                            document.getElementById('auth-overlay').style.display = 'flex';
+                            return;
+                        }
+                    }
+                    window.appData.role = data.role;
+                    if(window.appData.role === 'admin') {
+                        document.getElementById('admin-section').style.display = 'block';
+                    }
+                }
+
+                if(user.emailVerified) {
+                    document.getElementById('auth-overlay').style.display = 'none'; document.getElementById('app-container').style.display = 'block';
+                    document.getElementById('u-name').textContent = user.email.split('@')[0];
+                    window.app.initTheme(); window.showLoader(true);
+                    
+                    onSnapshot(doc(db, "attendance", user.uid), (doc) => { if(doc.exists()) window.appData.events = doc.data().events || {}; window.app.renderCalendar(); window.app.checkAutoFill(); });
+                    onSnapshot(doc(db, "settings", user.uid), (doc) => { 
+                        if(doc.exists()) window.appData.personal = doc.data() || {};
+                        if(!window.appData.personal.nfc) window.appData.personal.nfc = {enabled: false, serial: ''};
+                        if(!window.appData.personal.dismissedMsgs) window.appData.personal.dismissedMsgs = [];
+                        if(!window.appData.personal.deletedMsgs) window.appData.personal.deletedMsgs = [];
+                        
+                        document.getElementById('u-name').textContent = window.appData.personal.fullName || user.email.split('@')[0];
+                        document.getElementById('btn-nfc-scan').style.display = window.appData.personal.nfc.enabled ? 'flex' : 'none';
+                        
+                        if(window.appData.personal.themeColor) {
+                            window.app.applyColor(window.appData.personal.themeColor);
+                        }
+
+                        window.app.calcStats(); window.app.checkMessages();
+                    });
+                    onSnapshot(doc(db, "config", "general"), (doc) => { if(doc.exists()) { window.appData.global = doc.data() || {}; if(window.appData.global.appName) { document.title = window.appData.global.appName; document.getElementById('header-title').textContent = window.appData.global.appName; } } });
+                    const q = query(collection(db, "notifications"), orderBy("createdAt", "desc"));
+                    onSnapshot(q, (snapshot) => { let msgs = []; snapshot.forEach((doc) => msgs.push({ id: doc.id, ...doc.data() })); window.appData.messages = msgs; window.app.checkMessages(); });
+                    window.showLoader(false);
+                } else { if(user) await signOut(auth); document.getElementById('auth-overlay').style.display = 'flex'; document.getElementById('app-container').style.display = 'none'; window.showLoader(false); }
+            } else {
+                document.getElementById('auth-overlay').style.display = 'flex'; document.getElementById('app-container').style.display = 'none'; window.showLoader(false);
+            }
+        });
     </script>
 </body>
 </html>
